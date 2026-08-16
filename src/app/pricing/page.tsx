@@ -48,7 +48,6 @@ const PLANS: PricingPlan[] = [
       "Biaya pemeliharaan Rp 1.900.000/bulan, ditagih tiap 3 bulan (Rp 5.700.000)",
       "Backup data & monitoring rutin",
       "Prioritas dukungan lebih cepat",
-      "Paket bisa disesuaikan sewaktu-waktu dengan kebutuhan Anda",
     ],
   },
 ]
