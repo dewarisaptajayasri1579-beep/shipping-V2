@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { LayoutGrid, Tags, FileInput, BarChart3, Bell } from "lucide-react"
+import { LayoutGrid, Tags, FileInput, BarChart3, Bell, Wallet } from "lucide-react"
 
 export interface NavItem {
   label: string
@@ -99,6 +99,10 @@ export const NAV_GROUPS: NavGroup[] = [
         ],
       },
     ],
+  },
+  {
+    group: "Lainnya",
+    items: [{ label: "Pricing", icon: Wallet, href: "/pricing" }],
   },
 ]
 
