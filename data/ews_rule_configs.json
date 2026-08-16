@@ -1,0 +1,109 @@
+[
+  {
+    "id": "eta-mendekat",
+    "ruleId": "eta-mendekat",
+    "enabled": true,
+    "params": {
+      "hMinus": 3
+    },
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "updatedAt": "2026-08-16T05:50:27.596Z"
+  },
+  {
+    "id": "gap-dtd-proyeksi",
+    "ruleId": "gap-dtd-proyeksi",
+    "enabled": true,
+    "params": {
+      "percentThreshold": 80
+    },
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "updatedAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "jatuh-tempo-pembayaran",
+    "ruleId": "jatuh-tempo-pembayaran",
+    "enabled": true,
+    "params": {
+      "hMinus": 7
+    },
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "updatedAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "pib-belum-lengkap",
+    "ruleId": "pib-belum-lengkap",
+    "enabled": true,
+    "params": {
+      "hMinus": 5
+    },
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "updatedAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "shipment-tinggi-macet",
+    "ruleId": "shipment-tinggi-macet",
+    "enabled": true,
+    "params": {
+      "daysNoChange": 14
+    },
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "updatedAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "invoice-ganda",
+    "ruleId": "invoice-ganda",
+    "enabled": true,
+    "params": {},
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "updatedAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "harga-menyimpang",
+    "ruleId": "harga-menyimpang",
+    "enabled": true,
+    "params": {
+      "percentThreshold": 20
+    },
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "updatedAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "rate-forwarder-naik",
+    "ruleId": "rate-forwarder-naik",
+    "enabled": true,
+    "params": {
+      "percentThreshold": 15
+    },
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "updatedAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "bayar-sebelum-datang",
+    "ruleId": "bayar-sebelum-datang",
+    "enabled": true,
+    "params": {},
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "updatedAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "perubahan-setelah-done",
+    "ruleId": "perubahan-setelah-done",
+    "enabled": true,
+    "params": {
+      "minHoursDiff": 24
+    },
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "updatedAt": "1970-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "vendor-baru-nilai-besar",
+    "ruleId": "vendor-baru-nilai-besar",
+    "enabled": true,
+    "params": {
+      "valueThreshold": 5000000,
+      "minHistoryCount": 2
+    },
+    "createdAt": "1970-01-01T00:00:00.000Z",
+    "updatedAt": "1970-01-01T00:00:00.000Z"
+  }
+]

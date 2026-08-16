@@ -6,8 +6,6 @@ export interface NavItem {
   /** Item dengan `children` (parent submenu) tidak perlu href — klik-nya cuma expand/collapse. */
   href?: string
   icon?: LucideIcon
-  /** Tampilkan juga di bottom bar mobile — jaga maksimal ~5 item aktif. Diabaikan kalau item punya children. */
-  bottomBar?: boolean
   /** Submenu 1 level (parent + anak) — dirender expand/collapse di sidebar. */
   children?: NavItem[]
 }
@@ -115,6 +113,11 @@ function flattenNavItems(items: NavItem[], parentLabel?: string): { label: strin
 
 export const FLAT_NAV_ITEMS = flattenNavItems(NAV_GROUPS.flatMap((g) => g.items))
 
-export const BOTTOM_NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items).filter(
-  (i): i is NavItem & { href: string; icon: LucideIcon } => Boolean(i.bottomBar && i.href && i.icon)
+/** 4 tombol tetap di bottom bar mobile: 3 shortcut ke section tersering dipakai + 1 "Lainnya"
+ *  (hamburger) yang isinya grup-grup sisa. Kalau nama grup di atas berubah, sesuaikan di sini juga. */
+export const BOTTOM_BAR_DASHBOARD = NAV_GROUPS[0].items[0]
+export const BOTTOM_BAR_TRANSAKSI = NAV_GROUPS.find((g) => g.group === "Transaksi")!.items[0]
+export const BOTTOM_BAR_LAPORAN = NAV_GROUPS.find((g) => g.group === "Laporan")!.items[0]
+export const BOTTOM_BAR_MORE_GROUPS = NAV_GROUPS.filter(
+  (g) => g.group !== "Transaksi" && g.group !== "Laporan" && g !== NAV_GROUPS[0]
 )

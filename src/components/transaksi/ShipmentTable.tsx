@@ -389,6 +389,7 @@ export const ShipmentTable: React.FC<{
             searchable={false}
           />
           <CurrencyInput label="Nilai Billing" value={form.nilaiBilling} onChange={(v) => setForm((f) => ({ ...f, nilaiBilling: v }))} />
+          <DatePicker label="Jatuh Tempo Pembayaran PI" value={form.dueDatePI} onChange={(e) => setForm((f) => ({ ...f, dueDatePI: e.target.value }))} />
           <Select label="Forwarder" options={forwarderOptions} value={form.forwarderId} onChange={(v) => setForm((f) => ({ ...f, forwarderId: v }))} placeholder="Pilih forwarder" />
           <Select
             label="Status Pembayaran FO"
@@ -398,6 +399,7 @@ export const ShipmentTable: React.FC<{
             searchable={false}
           />
           <CurrencyInput label="Nilai Forwarder" value={form.nilaiForwarder} onChange={(v) => setForm((f) => ({ ...f, nilaiForwarder: v }))} />
+          <DatePicker label="Jatuh Tempo Pembayaran FO" value={form.dueDateFO} onChange={(e) => setForm((f) => ({ ...f, dueDateFO: e.target.value }))} />
           <Select
             label="Status Shipment"
             options={toOptions(STATUS_SHIPMENT)}
