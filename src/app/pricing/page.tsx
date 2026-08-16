@@ -22,15 +22,15 @@ const PLANS: PricingPlan[] = [
     badge: "One-time",
     price: "Rp 33.750.000",
     priceNote: "sekali bayar, harga final",
-    description: "Source code & hasil deploy diserahkan penuh ke client. Cocok kalau client mau pegang kendali penuh atas sistem dan hostingnya sendiri.",
+    description: "Source code & hasil deploy kami serahkan sepenuhnya kepada Anda. Cocok jika Anda ingin memegang kendali penuh atas sistem dan hosting sendiri.",
     icon: Package,
     highlight: false,
     features: [
-      "Source code jadi milik client sepenuhnya",
-      "Setup & deploy awal ke server/hosting client",
-      "Pembuatan dokumentasi sistem",
-      "Support maintenance 1 bulan",
-      "Tidak ada biaya bulanan setelah masa support berakhir",
+      "Source code menjadi milik Anda sepenuhnya",
+      "Setup & deploy awal ke server/hosting Anda",
+      "Dokumentasi sistem lengkap",
+      "Dukungan maintenance selama 1 bulan",
+      "Tidak ada biaya bulanan setelah masa dukungan berakhir",
     ],
   },
   {
@@ -39,15 +39,15 @@ const PLANS: PricingPlan[] = [
     badge: "Berlangganan",
     price: "DP Rp 12.500.000",
     priceNote: "+ Rp 1.900.000 / bulan",
-    description: "Kamu yang pegang hosting & server, client tinggal pakai. Cocok untuk relasi jangka panjang dan pendapatan berulang.",
+    description: "Hosting & server kami yang kelola, Anda tinggal pakai. Cocok untuk kemitraan jangka panjang dengan dukungan berkelanjutan.",
     icon: RefreshCw,
     highlight: true,
     features: [
-      "Hosting & server dikelola olehmu",
+      "Hosting & server dikelola sepenuhnya oleh kami",
       "Update fitur & perbaikan bug berkelanjutan",
       "Backup data & monitoring rutin",
-      "Prioritas support lebih cepat",
-      "Bisa upgrade/downgrade paket sesuai kebutuhan client",
+      "Prioritas dukungan lebih cepat",
+      "Paket bisa disesuaikan sewaktu-waktu dengan kebutuhan Anda",
     ],
   },
 ]
@@ -62,7 +62,7 @@ export default async function PricingPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-fg tracking-tight">Pricing</h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-fg-muted font-medium mt-1">
-            Opsi harga untuk penawaran sistem ini ke client.
+            Pilih paket yang paling sesuai dengan kebutuhan Anda.
           </p>
         </div>
 
@@ -114,11 +114,7 @@ export default async function PricingPage() {
         </div>
 
         <Card variant="glass" padding="md" className="text-xs sm:text-sm text-slate-600 dark:text-fg-muted leading-relaxed">
-          <p>
-            Kisaran harga di atas untuk penjualan satu client (custom build). Kalau sistem ini mau dipakai ulang sebagai
-            template untuk beberapa client sekaligus, harga per client bisa ditekan lebih rendah karena biaya build sudah
-            diamortisasi.
-          </p>
+          <p>Ada kebutuhan khusus di luar paket di atas? Hubungi kami untuk konsultasi dan penyesuaian lebih lanjut.</p>
         </Card>
       </div>
     </AppLayout>
