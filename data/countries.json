@@ -1,0 +1,6 @@
+[
+  { "id": "country-singapore", "name": "SINGAPORE", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "country-france", "name": "FRANCE", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "country-china", "name": "CHINA", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "country-india", "name": "INDIA", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" }
+]

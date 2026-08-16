@@ -1,0 +1,4 @@
+[
+  { "id": "supplier-accmetro", "name": "ACC METRO", "brandIds": ["brand-mb"], "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "supplier-interlink-dtd", "name": "INTERLINK", "brandIds": ["brand-allway", "brand-illuvia"], "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" }
+]

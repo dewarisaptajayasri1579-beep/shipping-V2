@@ -1,0 +1,4 @@
+[
+  { "id": "log-1", "shipmentId": "shp-1", "paymentType": "PI", "status": "SUDAH DIBAYAR", "note": "Pembayaran ke FLUKE via TT", "changedAt": "2026-01-05", "createdAt": "2026-01-05T00:00:00.000Z", "updatedAt": "2026-01-05T00:00:00.000Z" },
+  { "id": "log-2", "shipmentId": "shp-6", "paymentType": "FO", "status": "SUDAH DIBAYAR", "note": "Dokumen sudah lunas di finance", "changedAt": "2025-12-10", "createdAt": "2025-12-10T00:00:00.000Z", "updatedAt": "2025-12-10T00:00:00.000Z" }
+]

@@ -1,0 +1,5 @@
+[
+  { "id": "forwarder-fedex", "name": "FEDEX", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "forwarder-rica", "name": "RICA", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "forwarder-interlink", "name": "INTERLINK", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" }
+]

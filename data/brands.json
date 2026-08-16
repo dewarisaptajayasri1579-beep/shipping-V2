@@ -1,0 +1,16 @@
+[
+  { "id": "brand-fluke", "name": "FLUKE", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-socomec", "name": "SOCOMEC", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-allway", "name": "ALLWAY", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-kinglumi", "name": "KINGLUMI", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-illuvia", "name": "ILLUVIA", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-obo", "name": "OBO", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-coolight", "name": "COOLIGHT", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-ginkgo", "name": "GINKGO", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-kled", "name": "KLED", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-lifud", "name": "LIFUD", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-mb", "name": "MB", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-norming", "name": "NORMING", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-shilin", "name": "SHILIN", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" },
+  { "id": "brand-tuya", "name": "TUYA", "createdAt": "2026-08-16T00:00:00.000Z", "updatedAt": "2026-08-16T00:00:00.000Z" }
+]

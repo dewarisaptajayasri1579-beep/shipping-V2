@@ -1,0 +1,19 @@
+# Environment variables
+.env
+.env*.local
+
+# Data mode demo (tanpa DB) — di-generate otomatis, lihat src/lib/dummy-data.ts
+.dummy-users.json
+
+# Kredensial Google OAuth (backup DB ke Drive) — jangan pernah ke-commit. Anchor ke root (/)
+# supaya TIDAK ikut nge-ignore src/lib/backup/ atau src/app/api/backup/ (kode aslinya).
+/backup/
+
+# Common ignores
+node_modules
+.next/
+.DS_Store
+*.tsbuildinfo
+
+# File gambar laporan WA sementara — di-generate & dihapus otomatis oleh runDashboardReport()
+public/reports/
