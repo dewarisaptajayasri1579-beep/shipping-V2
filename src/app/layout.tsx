@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 import { PreferencesProvider } from "@/components/providers/PreferencesProvider";
+import { APP_CONFIG } from "@/lib/app-config";
 
 const THEME_INIT_SCRIPT = `
 (function () {
@@ -23,8 +24,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Seven OS Template",
-  description: "Template dasar Next.js dengan Prisma dan Tailwind CSS v4.",
+  title: `${APP_CONFIG.name} — ${APP_CONFIG.tagline}`,
+  description: APP_CONFIG.subTagline,
 };
 
 export const viewport: Viewport = {

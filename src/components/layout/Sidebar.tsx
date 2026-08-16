@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AppLogo } from "../ui/AppLogo";
-import { ChevronLeft, ChevronRight, ChevronDown, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { APP_CONFIG } from "@/lib/app-config";
 import { NAV_GROUPS, type NavItem } from "@/lib/nav-config";
 
@@ -137,18 +137,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse,
       </nav>
 
       <div className="p-4 border-t border-blue-800/40 dark:border-line bg-black/15">
-        {!isCollapsed ? (
-          <div className="p-3 bg-white/5 rounded-2xl border border-white/10 text-xs text-blue-200/90 leading-relaxed mb-3">
-            <div className="flex items-start gap-2">
-              <Info className="w-4 h-4 text-blue-300 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-white">Template Sistem</p>
-                <p className="text-[11px] text-blue-200/70 mt-0.5">Template dasar siap pakai.</p>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
         <button
           onClick={onToggleCollapse}
           className="w-full flex items-center justify-center p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"

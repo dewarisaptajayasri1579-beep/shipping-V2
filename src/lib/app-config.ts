@@ -5,7 +5,7 @@ import { Ship, Bell, Gauge } from "lucide-react"
  *  template ini dipakai untuk aplikasi baru — tidak perlu cari-ganti manual
  *  di komponen (AppLogo, Sidebar, Header, AppLayout, AuthLayout). */
 export const APP_CONFIG = {
-  name: "Shipping v2",
+  name: "Shipping Control",
   tagline: "Import Shipment Dashboard",
   subTagline: "Master Data, Transaksi, Laporan & Early Warning System",
   /** Kalimat promosi di halaman login/register (sisi kiri, desktop). */
