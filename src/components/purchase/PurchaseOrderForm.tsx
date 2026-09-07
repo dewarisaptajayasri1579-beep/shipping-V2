@@ -72,7 +72,6 @@ export const PurchaseOrderForm: React.FC<{
 }> = ({ mode, record, supplierOptions, brandOptions, countryOptions, itemOptions }) => {
   const router = useRouter();
   const toast = useToast();
-  const { panelRef, handleEnterAdvance } = useFormKeyboardNav<HTMLDivElement>();
 
   const [form, setForm] = useState<FormState>(() => toForm(record));
   const [submitting, setSubmitting] = useState(false);
@@ -82,6 +81,21 @@ export const PurchaseOrderForm: React.FC<{
   };
   const addItemRow = () => setForm((f) => ({ ...f, items: [...f.items, newItemRow()] }));
   const removeItemRow = (key: string) => setForm((f) => ({ ...f, items: f.items.length > 1 ? f.items.filter((it) => it.key !== key) : f.items }));
+
+  /** Enter di Unit Price baris terakhir = nambah baris baru (bukan lompat ke Simpan) —
+   *  baris di tengah tetap lanjut ke Item baris berikutnya lewat rantai Enter generik. */
+  const handleUnitPriceKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, key: string) => {
+    if (e.key !== "Enter") return;
+    const isLast = form.items[form.items.length - 1]?.key === key;
+    if (!isLast) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const row = newItemRow();
+    setForm((f) => ({ ...f, items: [...f.items, row] }));
+    requestAnimationFrame(() => {
+      document.getElementById(`po-item-${row.key}`)?.focus();
+    });
+  };
 
   const submitForm = async () => {
     if (!form.poNumber.trim()) {
@@ -117,6 +131,8 @@ export const PurchaseOrderForm: React.FC<{
     }
   };
 
+  const { panelRef, handleEnterAdvance } = useFormKeyboardNav<HTMLDivElement>(submitForm);
+
   return (
     <div ref={panelRef} data-modal-panel onKeyDown={handleEnterAdvance} className="space-y-6">
       <Card variant="panel" padding="lg" className="space-y-5">
@@ -136,9 +152,21 @@ export const PurchaseOrderForm: React.FC<{
         <div className="space-y-2">
           {form.items.map((it) => (
             <div key={it.key} className="grid grid-cols-1 sm:grid-cols-[1fr_120px_160px_140px_32px] gap-2 items-end">
-              <Select label="Item" options={itemOptions} value={it.itemId} onChange={(v) => updateItem(it.key, { itemId: v })} placeholder="Pilih item" />
+              <Select
+                id={`po-item-${it.key}`}
+                label="Item"
+                options={itemOptions}
+                value={it.itemId}
+                onChange={(v) => updateItem(it.key, { itemId: v })}
+                placeholder="Pilih item"
+              />
               <Input type="number" label="Qty Order" value={it.qtyOrder} onChange={(e) => updateItem(it.key, { qtyOrder: Number(e.target.value) })} />
-              <CurrencyInput label="Unit Price" value={it.unitPrice} onChange={(v) => updateItem(it.key, { unitPrice: v })} />
+              <CurrencyInput
+                label="Unit Price"
+                value={it.unitPrice}
+                onChange={(v) => updateItem(it.key, { unitPrice: v })}
+                onKeyDown={(e) => handleUnitPriceKeyDown(e, it.key)}
+              />
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-fg-secondary select-none">Subtotal</span>
                 <p className="h-14 flex items-center px-1 text-sm font-semibold text-slate-700 dark:text-fg-secondary">{formatRupiah(it.qtyOrder * it.unitPrice)}</p>

@@ -40,11 +40,15 @@ export function focusFirstField(scope: HTMLElement) {
   }
 }
 
-/** Versi non-Modal dari behavior di atas (auto-focus field pertama + Enter pindah kolom)
- *  — dipakai di form yang halaman penuh (bukan modal), mis. Tambah/Edit Purchase Order.
- *  Tempel `panelRef` & `onKeyDown={handleEnterAdvance}` ke div pembungkus form-nya. */
-export function useFormKeyboardNav<T extends HTMLElement = HTMLDivElement>() {
+/** Versi non-Modal dari behavior di atas (auto-focus field pertama + Enter pindah kolom
+ *  + Ctrl/Cmd+S buat Simpan) — dipakai di form yang halaman penuh (bukan modal), mis.
+ *  Tambah/Edit Purchase Order. Tempel `panelRef` & `onKeyDown={handleEnterAdvance}` ke
+ *  div pembungkus form-nya. `onSave` opsional — kalau diisi, Ctrl+S/Cmd+S manggil itu
+ *  dan nyegah dialog "Save Page" bawaan browser. */
+export function useFormKeyboardNav<T extends HTMLElement = HTMLDivElement>(onSave?: () => void) {
   const panelRef = useRef<T>(null)
+  const onSaveRef = useRef(onSave)
+  onSaveRef.current = onSave
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -52,6 +56,18 @@ export function useFormKeyboardNav<T extends HTMLElement = HTMLDivElement>() {
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (!onSave) return
+    const handleSaveShortcut = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault()
+        onSaveRef.current?.()
+      }
+    }
+    window.addEventListener("keydown", handleSaveShortcut)
+    return () => window.removeEventListener("keydown", handleSaveShortcut)
+  }, [onSave !== undefined]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleEnterAdvance = (e: React.KeyboardEvent) => {
     if (e.key !== "Enter") return
