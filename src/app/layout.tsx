@@ -35,6 +35,11 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+/** Semua halaman butuh session cookie (auth) & data live dari Postgres — jangan di-prerender
+ *  statis saat `next build`. Selain datanya emang harus selalu fresh, build container (mis.
+ *  Coolify) belum tentu bisa reach DB produksi / verifikasi TLS cert-nya saat build image. */
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" className={`${plusJakartaSans.variable} h-full antialiased`} suppressHydrationWarning>
