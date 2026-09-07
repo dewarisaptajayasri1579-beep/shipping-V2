@@ -6,9 +6,9 @@ import {
   purchaseOrderData,
   supplierInvoiceData,
   shipmentData,
-  invoicedQtyByPoItem,
   shippedQtyByInvoiceItem,
   computeInvoiceStatus,
+  purchaseOrdersForInvoiceForm,
 } from "@/lib/data/purchase"
 import { SupplierInvoiceTable } from "@/components/purchase/SupplierInvoiceTable"
 
@@ -19,15 +19,7 @@ export default async function SupplierInvoicePage() {
   const countries = countryStore.getAll()
   const items = itemStore.getAll()
 
-  const purchaseOrdersForForm = orders.map((po) => {
-    const invoicedByItem = invoicedQtyByPoItem(po, invoices)
-    return {
-      id: po.id,
-      poNumber: po.poNumber,
-      supplierId: po.supplierId,
-      items: po.items.map((it) => ({ id: it.id, itemId: it.itemId, qtyOrder: it.qtyOrder, unitPrice: it.unitPrice, alreadyInvoiced: invoicedByItem[it.id] ?? 0 })),
-    }
-  })
+  const purchaseOrdersForForm = purchaseOrdersForInvoiceForm(orders, invoices)
 
   const rows = invoices.map((inv) => ({
     id: inv.id,

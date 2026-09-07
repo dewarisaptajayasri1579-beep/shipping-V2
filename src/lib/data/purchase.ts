@@ -447,6 +447,22 @@ export function computePoStatus(po: PurchaseOrderWithItems, invoicedByItem: Reco
   return "PARTIALLY INVOICED"
 }
 
+/** PO + status + sisa qty per item, bentuk yang dipakai form Tambah/Edit Supplier Invoice buat
+ *  nge-filter "PO supplier ini yang masih bisa di-invoice" (dipakai di 3 halaman: list, new, [id]). */
+export function purchaseOrdersForInvoiceForm(orders: PurchaseOrderWithItems[], invoices: SupplierInvoiceWithItems[]) {
+  return orders.map((po) => {
+    const invoicedByItem = invoicedQtyByPoItem(po, invoices)
+    return {
+      id: po.id,
+      poNumber: po.poNumber,
+      poDate: po.poDate ? po.poDate.toISOString().slice(0, 10) : null,
+      supplierId: po.supplierId,
+      items: po.items.map((it) => ({ id: it.id, itemId: it.itemId, qtyOrder: it.qtyOrder, unitPrice: it.unitPrice, alreadyInvoiced: invoicedByItem[it.id] ?? 0 })),
+      status: computePoStatus(po, invoicedByItem),
+    }
+  })
+}
+
 export type InvoiceStatus = "DRAFT" | "READY TO SHIP" | "PARTIALLY SHIPPED" | "FULLY SHIPPED"
 
 export function computeInvoiceStatus(invoice: SupplierInvoiceWithItems, shippedByItem: Record<string, number>): InvoiceStatus {
