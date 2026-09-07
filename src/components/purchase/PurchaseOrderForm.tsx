@@ -29,6 +29,10 @@ interface FormState {
 
 const newItemRow = (): ItemRowForm => ({ key: crypto.randomUUID(), itemId: "", qtyOrder: 0, unitPrice: 0 });
 
+function formatRupiah(amount: number) {
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount);
+}
+
 const toForm = (r?: PurchaseOrderRow): FormState =>
   r
     ? {
@@ -131,10 +135,14 @@ export const PurchaseOrderForm: React.FC<{
         </div>
         <div className="space-y-2">
           {form.items.map((it) => (
-            <div key={it.key} className="grid grid-cols-1 sm:grid-cols-[1fr_120px_160px_32px] gap-2 items-end">
+            <div key={it.key} className="grid grid-cols-1 sm:grid-cols-[1fr_120px_160px_140px_32px] gap-2 items-end">
               <Select label="Item" options={itemOptions} value={it.itemId} onChange={(v) => updateItem(it.key, { itemId: v })} placeholder="Pilih item" />
               <Input type="number" label="Qty Order" value={it.qtyOrder} onChange={(e) => updateItem(it.key, { qtyOrder: Number(e.target.value) })} />
               <CurrencyInput label="Unit Price" value={it.unitPrice} onChange={(v) => updateItem(it.key, { unitPrice: v })} />
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-fg-secondary select-none">Subtotal</span>
+                <p className="h-14 flex items-center px-1 text-sm font-semibold text-slate-700 dark:text-fg-secondary">{formatRupiah(it.qtyOrder * it.unitPrice)}</p>
+              </div>
               <button
                 type="button"
                 onClick={() => removeItemRow(it.key)}
@@ -145,6 +153,12 @@ export const PurchaseOrderForm: React.FC<{
               </button>
             </div>
           ))}
+        </div>
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/80 dark:border-line">
+          <span className="text-sm font-bold text-slate-700 dark:text-fg-secondary">Total Nominal</span>
+          <span className="text-lg font-extrabold text-slate-900 dark:text-fg">
+            {formatRupiah(form.items.reduce((sum, it) => sum + it.qtyOrder * it.unitPrice, 0))}
+          </span>
         </div>
       </Card>
 

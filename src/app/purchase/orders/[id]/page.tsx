@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation"
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { Breadcrumb } from "@/components/ui"
 import { getCurrentUser } from "@/lib/current-user"
@@ -34,6 +36,12 @@ export default async function EditPurchaseOrderPage({ params }: { params: Promis
     <AppLayout userName={user.name} userRole={user.role}>
       <div className="space-y-6 max-w-4xl mx-auto">
         <Breadcrumb items={[{ label: "Purchase" }, { label: "Purchase Order", href: "/purchase/orders" }, { label: po.poNumber }]} />
+        <Link
+          href="/purchase/orders"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-fg-muted hover:text-blue-700 dark:hover:text-[var(--accent-highlight)] transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Kembali ke Purchase Order
+        </Link>
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-fg tracking-tight">Edit Purchase Order</h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-fg-muted font-medium mt-1">{po.poNumber}</p>
