@@ -27,6 +27,7 @@ export function sanitizePurchaseOrder(body: unknown): PurchaseOrderInput | { err
     countryId: optionalString(input?.countryId),
     currency: requiredString(input?.currency) || "USD",
     notes: optionalString(input?.notes),
+    documentUrl: optionalString(input?.documentUrl),
     items: Array.isArray(input?.items) ? input.items.map(sanitizePoItem) : [],
   }
 }

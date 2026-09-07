@@ -28,6 +28,7 @@ export default async function EditPurchaseOrderPage({ params }: { params: Promis
     countryId: po.countryId,
     currency: po.currency,
     notes: po.notes,
+    documentUrl: po.documentUrl,
     items: po.items.map((it) => ({ id: it.id, itemId: it.itemId, qtyOrder: it.qtyOrder, unitPrice: it.unitPrice })),
     status: computePoStatus(po, invoicedQtyByPoItem(po, invoices)),
   }

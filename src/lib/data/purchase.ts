@@ -50,7 +50,21 @@ export interface PurchaseOrderInput {
   countryId: string | null
   currency: string
   notes: string | null
+  documentUrl: string | null
   items: PurchaseOrderItemInput[]
+}
+
+function poHeaderData(input: PurchaseOrderInput) {
+  return {
+    poNumber: input.poNumber,
+    poDate: toDate(input.poDate),
+    supplierId: input.supplierId,
+    brandId: input.brandId,
+    countryId: input.countryId,
+    currency: input.currency,
+    notes: input.notes,
+    documentUrl: input.documentUrl,
+  }
 }
 
 export const purchaseOrderData = {
@@ -59,13 +73,7 @@ export const purchaseOrderData = {
   create: (input: PurchaseOrderInput) =>
     prisma.purchaseOrder.create({
       data: {
-        poNumber: input.poNumber,
-        poDate: toDate(input.poDate),
-        supplierId: input.supplierId,
-        brandId: input.brandId,
-        countryId: input.countryId,
-        currency: input.currency,
-        notes: input.notes,
+        ...poHeaderData(input),
         items: { create: input.items.map((it) => ({ itemId: it.itemId, qtyOrder: it.qtyOrder, unitPrice: it.unitPrice })) },
       },
       ...poWithItems,
@@ -74,15 +82,7 @@ export const purchaseOrderData = {
     prisma.$transaction(async (tx) => {
       await tx.purchaseOrder.update({
         where: { id },
-        data: {
-          poNumber: input.poNumber,
-          poDate: toDate(input.poDate),
-          supplierId: input.supplierId,
-          brandId: input.brandId,
-          countryId: input.countryId,
-          currency: input.currency,
-          notes: input.notes,
-        },
+        data: poHeaderData(input),
       })
       // Replace-all-items: sederhana & konsisten sama pola nested update di model
       // JSON-store lain di app ini (PATCH ngirim ulang seluruh array item).

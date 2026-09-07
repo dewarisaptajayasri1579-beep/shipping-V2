@@ -5,8 +5,15 @@ import { useEffect, useRef } from "react"
  *  Tab/Shift+Tab native yang memang sudah jalan sendiri lewat urutan DOM.
  *
  *  Discope ke elemen dengan [data-modal-panel] terdekat (fallback ke document.body kalau
- *  dipakai di luar Modal, mis. form filter di halaman biasa). */
-const FOCUSABLE_SELECTOR = 'input:not([disabled]):not([type="hidden"]):not([data-select-search]), textarea:not([disabled]), button:not([disabled])'
+ *  dipakai di luar Modal, mis. form filter di halaman biasa).
+ *
+ *  Tandai tombol utility (mis. "Tambah Baris", hapus baris di tabel item repeater) dengan
+ *  `data-skip-nav` supaya gak jadi "pemberhentian" di rantai Enter — soalnya kalau nyangkut
+ *  di situ, Enter berikutnya bakal ke-klik tombolnya (native behavior), bukan pindah field.
+ *  Tab/Shift+Tab native tetap bisa jangkau elemen ini seperti biasa (cuma Enter-chain kita
+ *  yang skip). */
+const FOCUSABLE_SELECTOR =
+  'input:not([disabled]):not([type="hidden"]):not([data-select-search]), textarea:not([disabled]), button:not([disabled]):not([data-skip-nav])'
 
 function isVisible(el: Element): el is HTMLElement {
   return el instanceof HTMLElement && el.offsetParent !== null

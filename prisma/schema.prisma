@@ -57,6 +57,7 @@ model PurchaseOrder {
   countryId  String?             @map("country_id")
   currency   String              @default("USD")
   notes      String?
+  documentUrl String?            @map("document_url")
   createdAt  DateTime            @default(now()) @map("created_at")
   updatedAt  DateTime            @updatedAt @map("updated_at")
   items      PurchaseOrderItem[]

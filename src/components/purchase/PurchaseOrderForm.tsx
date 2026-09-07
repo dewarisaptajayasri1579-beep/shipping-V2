@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { Card, Button, Input, Select, CurrencyInput, DatePicker, useToast } from "@/components/ui";
 import { useFormKeyboardNav } from "@/lib/focus-nav";
+import { DocumentUploadField } from "@/components/transaksi/DocumentUploadField";
 import type { PurchaseOrderRow } from "./PurchaseOrderTable";
 
 type OptionList = { value: string; label: string }[];
@@ -24,6 +25,7 @@ interface FormState {
   countryId: string;
   currency: string;
   notes: string;
+  documentUrl: string | null;
   items: ItemRowForm[];
 }
 
@@ -43,6 +45,7 @@ const toForm = (r?: PurchaseOrderRow): FormState =>
         countryId: r.countryId ?? "",
         currency: r.currency,
         notes: r.notes ?? "",
+        documentUrl: r.documentUrl,
         items: r.items.length > 0 ? r.items.map((it) => ({ key: it.id, itemId: it.itemId ?? "", qtyOrder: it.qtyOrder, unitPrice: it.unitPrice })) : [newItemRow()],
       }
     : {
@@ -53,6 +56,7 @@ const toForm = (r?: PurchaseOrderRow): FormState =>
         countryId: "",
         currency: "USD",
         notes: "",
+        documentUrl: null,
         items: [newItemRow()],
       };
 
@@ -124,15 +128,11 @@ export const PurchaseOrderForm: React.FC<{
           <Select label="Negara Asal" options={countryOptions} value={form.countryId} onChange={(v) => setForm((f) => ({ ...f, countryId: v }))} placeholder="Pilih negara" />
           <Input label="Currency" value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))} />
         </div>
+        <DocumentUploadField label="Scan PO" value={form.documentUrl} onChange={(url) => setForm((f) => ({ ...f, documentUrl: url }))} />
       </Card>
 
       <Card variant="panel" padding="lg" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-700 dark:text-fg-secondary">Item</h3>
-          <Button variant="outline" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={addItemRow}>
-            Tambah Baris
-          </Button>
-        </div>
+        <h3 className="text-sm font-bold text-slate-700 dark:text-fg-secondary">Item</h3>
         <div className="space-y-2">
           {form.items.map((it) => (
             <div key={it.key} className="grid grid-cols-1 sm:grid-cols-[1fr_120px_160px_140px_32px] gap-2 items-end">
@@ -145,6 +145,7 @@ export const PurchaseOrderForm: React.FC<{
               </div>
               <button
                 type="button"
+                data-skip-nav
                 onClick={() => removeItemRow(it.key)}
                 className="h-14 flex items-center justify-center rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
                 aria-label="Hapus baris"
@@ -154,6 +155,9 @@ export const PurchaseOrderForm: React.FC<{
             </div>
           ))}
         </div>
+        <Button variant="outline" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />} data-skip-nav onClick={addItemRow}>
+          Tambah Baris
+        </Button>
         <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/80 dark:border-line">
           <span className="text-sm font-bold text-slate-700 dark:text-fg-secondary">Total Nominal</span>
           <span className="text-lg font-extrabold text-slate-900 dark:text-fg">

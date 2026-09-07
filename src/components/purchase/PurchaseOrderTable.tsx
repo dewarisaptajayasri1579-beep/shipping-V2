@@ -21,6 +21,7 @@ export interface PurchaseOrderRow {
   countryId: string | null;
   currency: string;
   notes: string | null;
+  documentUrl: string | null;
   items: PoItemRow[];
   status: "DRAFT" | "OPEN" | "PARTIALLY INVOICED" | "FULLY INVOICED";
 }
