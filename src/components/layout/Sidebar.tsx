@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AppLogo } from "../ui/AppLogo";
@@ -96,8 +96,21 @@ const SidebarNavItem: React.FC<{ item: NavItem; isCollapsed: boolean; pathname: 
   );
 };
 
+const SIDEBAR_SCROLL_KEY = "sidebar-scroll-top";
+
 export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, className = "" }) => {
   const pathname = usePathname() || "/dashboard";
+  const navRef = useRef<HTMLElement | null>(null);
+
+  // AppLayout dirender ulang tiap ganti halaman (bukan lewat layout.tsx bersama), jadi <nav>
+  // ini remount setiap navigasi dan scrollTop-nya balik ke 0. Simpan & pulihkan lewat
+  // sessionStorage supaya posisi scroll sidebar tidak "loncat ke atas" saat klik menu bawah.
+  useLayoutEffect(() => {
+    const saved = sessionStorage.getItem(SIDEBAR_SCROLL_KEY);
+    if (saved && navRef.current) {
+      navRef.current.scrollTop = Number(saved);
+    }
+  }, []);
 
   return (
     <aside
@@ -123,7 +136,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse,
         )}
       </div>
 
-      <nav className="flex-1 px-3 py-6 space-y-5 overflow-y-auto">
+      <nav
+        ref={navRef}
+        onScroll={(e) => sessionStorage.setItem(SIDEBAR_SCROLL_KEY, String(e.currentTarget.scrollTop))}
+        className="flex-1 px-3 py-6 space-y-5 overflow-y-auto"
+      >
         {NAV_GROUPS.map((group, groupIndex) => (
           <div key={group.group ?? groupIndex} className="space-y-2">
             {group.group && !isCollapsed && (

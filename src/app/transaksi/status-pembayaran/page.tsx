@@ -25,8 +25,7 @@ export default async function StatusPembayaranPage() {
             rows={shipments.map((s) => ({
               id: s.id,
               shipmentName: s.shipmentName,
-              noInvoice: s.noInvoice,
-              statusPembayaranPI: s.statusPembayaranPI,
+              invoices: s.invoices.map((inv) => ({ id: inv.id, invoice: inv.invoice, statusPembayaranPI: inv.statusPembayaranPI })),
               statusPembayaranFO: s.statusPembayaranFO,
             }))}
             logs={logs}

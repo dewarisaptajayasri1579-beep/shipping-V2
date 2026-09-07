@@ -19,7 +19,7 @@ export default async function LaporanStatusBulanBrandPage() {
   })
 
   const byMonth = MONTH_LABELS.map((label, i) => {
-    const rows = shipments.filter((s) => s.tanggalKedatangan && new Date(s.tanggalKedatangan).getMonth() === i)
+    const rows = shipments.filter((s) => s.eta && new Date(s.eta).getMonth() === i)
     return { month: label, total: rows.length }
   })
 

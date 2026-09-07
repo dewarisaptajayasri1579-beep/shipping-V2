@@ -206,5 +206,31 @@
     "id": "1e87d319-abb2-455c-8d13-65d923c6d066",
     "createdAt": "2026-08-16T05:49:59.000Z",
     "updatedAt": "2026-08-16T05:49:59.000Z"
+  },
+  {
+    "ruleId": "jatuh-tempo-pembayaran",
+    "refType": "shipment",
+    "refId": "shp-8-fae7dbb8-ffd4-4ce8-97dc-78fc1937f52a-PI",
+    "message": "INV142531200 - FRANCE - SEA - RICAKUSUMA (Invoice INV142531200): pembayaran ke supplier (PI) sudah lewat jatuh tempo 25 hari — eskalasi ke atasan",
+    "severity": "critical",
+    "status": "BELUM DITANGANI",
+    "triggeredAt": "2026-09-07",
+    "notified": false,
+    "id": "4cb2c51e-e787-420d-9edb-2ae1d6d449fb",
+    "createdAt": "2026-09-07T07:45:54.792Z",
+    "updatedAt": "2026-09-07T07:45:54.792Z"
+  },
+  {
+    "ruleId": "jatuh-tempo-pembayaran",
+    "refType": "shipment",
+    "refId": "shp-5-FO",
+    "message": "INV142530885 - SEA - RICAKUSUMA - FRANCE: pembayaran ke forwarder (FO) sudah lewat jatuh tempo 6 hari — eskalasi ke atasan",
+    "severity": "critical",
+    "status": "BELUM DITANGANI",
+    "triggeredAt": "2026-09-07",
+    "notified": false,
+    "id": "d5169b12-8412-415a-8148-8a2251eebc5d",
+    "createdAt": "2026-09-07T07:45:54.796Z",
+    "updatedAt": "2026-09-07T07:45:54.796Z"
   }
 ]

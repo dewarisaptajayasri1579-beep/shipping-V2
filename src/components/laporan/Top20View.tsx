@@ -11,7 +11,7 @@ export interface Top20Shipment {
   itemId: string | null;
   qty: number;
   priceSatuan: number;
-  tanggalKedatangan: string | null;
+  eta: string | null;
 }
 
 type OptionList = { value: string; label: string }[];
@@ -33,7 +33,7 @@ export const Top20View: React.FC<{
   const yearOptions = useMemo(() => {
     const years = new Set<string>();
     shipments.forEach((s) => {
-      if (s.tanggalKedatangan) years.add(String(new Date(s.tanggalKedatangan).getFullYear()));
+      if (s.eta) years.add(String(new Date(s.eta).getFullYear()));
     });
     return Array.from(years)
       .sort()
@@ -47,8 +47,8 @@ export const Top20View: React.FC<{
   const filtered = useMemo(() => {
     return shipments.filter((s) => {
       if (brandFilter.length > 0 && !brandFilter.includes(s.brandId ?? "")) return false;
-      if (!s.tanggalKedatangan) return yearFilter.length === 0 && monthFilter.length === 0;
-      const date = new Date(s.tanggalKedatangan);
+      if (!s.eta) return yearFilter.length === 0 && monthFilter.length === 0;
+      const date = new Date(s.eta);
       if (yearFilter.length > 0 && !yearFilter.includes(String(date.getFullYear()))) return false;
       if (monthFilter.length > 0 && !monthFilter.includes(MONTH_LABELS[date.getMonth()])) return false;
       return true;
@@ -74,8 +74,8 @@ export const Top20View: React.FC<{
   const byYear = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((s) => {
-      if (!s.tanggalKedatangan) return;
-      const year = String(new Date(s.tanggalKedatangan).getFullYear());
+      if (!s.eta) return;
+      const year = String(new Date(s.eta).getFullYear());
       map.set(year, (map.get(year) ?? 0) + 1);
     });
     return Array.from(map.entries())
@@ -86,8 +86,8 @@ export const Top20View: React.FC<{
   const byMonth = useMemo(() => {
     const counts = new Array(12).fill(0);
     filtered.forEach((s) => {
-      if (!s.tanggalKedatangan) return;
-      counts[new Date(s.tanggalKedatangan).getMonth()] += 1;
+      if (!s.eta) return;
+      counts[new Date(s.eta).getMonth()] += 1;
     });
     return MONTH_LABELS.map((label, i) => ({ month: label, Shipment: counts[i] }));
   }, [filtered]);

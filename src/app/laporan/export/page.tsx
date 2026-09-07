@@ -25,24 +25,34 @@ export default async function ExportPage() {
       key: "shipment",
       label: "Input Shipment/Import",
       description: "Seluruh data shipment beserta status barang & pembayaran.",
-      rows: shipments.map((s) => ({
-        Shipment: s.shipmentName,
-        Brand: brandLabel(s.brandId),
-        Negara: countryLabel(s.countryId),
-        "No Invoice": s.noInvoice,
-        "No PO": s.noPO,
-        Qty: s.qty,
-        "Price Satuan": s.priceSatuan,
-        "Total Price": s.qty * s.priceSatuan,
-        "AIR/SEA": s.airSea,
-        "Status Barang": s.statusBarang,
-        "Tanggal Kedatangan": s.tanggalKedatangan,
-        "Status Bayar PI": s.statusPembayaranPI,
-        Forwarder: forwarderLabel(s.forwarderId),
-        "Status Bayar FO": s.statusPembayaranFO,
-        "Nilai Forwarder": s.nilaiForwarder,
-        "Status Shipment": s.statusShipment,
-      })),
+      rows: shipments.flatMap((s) =>
+        s.invoices.flatMap((inv) =>
+          inv.purchaseOrders.flatMap((po) =>
+            po.items.map((it) => ({
+              Shipment: s.shipmentName,
+              Brand: brandLabel(s.brandId),
+              Negara: countryLabel(s.countryId),
+              Invoice: inv.invoice,
+              PO: po.po,
+              Qty: it.qty,
+              "Price Satuan": it.priceSatuan,
+              "Total Price": it.qty * it.priceSatuan,
+              "AIR/SEA": s.airSea,
+              PIB: s.pib,
+              "Status Barang": s.statusBarang,
+              "Tgl Pickup": s.tanggalPickup,
+              ETD: s.etd,
+              "ETA Pelabuhan": s.eta,
+              "ETA Gudang": s.etaGudang,
+              "Status Bayar PI": inv.statusPembayaranPI,
+              Forwarder: forwarderLabel(s.forwarderId),
+              "Status Bayar FO": s.statusPembayaranFO,
+              "Nilai Forwarder": s.nilaiForwarder,
+              "Status Shipment": s.statusShipment,
+            }))
+          )
+        )
+      ),
     },
     {
       key: "shipment-dtd",

@@ -11,11 +11,9 @@ export interface DashboardShipment {
   shipmentName: string;
   brandId: string | null;
   countryId: string | null;
-  qty: number;
-  priceSatuan: number;
   airSea: "AIR" | "SEA";
   statusBarang: StatusBarang;
-  tanggalKedatangan: string | null;
+  eta: string | null;
   nilaiBilling: number;
   nilaiForwarder: number;
   statusShipment: StatusShipment;
@@ -63,8 +61,8 @@ export const DashboardView: React.FC<{
   const perMonth = useMemo(() => {
     const counts = new Array(12).fill(0);
     filtered.forEach((s) => {
-      if (!s.tanggalKedatangan) return;
-      const month = new Date(s.tanggalKedatangan).getMonth();
+      if (!s.eta) return;
+      const month = new Date(s.eta).getMonth();
       if (!Number.isNaN(month)) counts[month] += 1;
     });
     return MONTH_LABELS.map((label, i) => ({ month: label, Shipment: counts[i] }));
@@ -152,7 +150,7 @@ export const DashboardView: React.FC<{
                     <TableCell>
                       <Badge variant="secondary">{s.airSea}</Badge>
                     </TableCell>
-                    <TableCell>{s.tanggalKedatangan || "BELUM ADA ETA"}</TableCell>
+                    <TableCell>{s.eta || "BELUM ADA ETA"}</TableCell>
                     <TableCell>
                       <Badge variant={STATUS_BARANG_BADGE[s.statusBarang]}>{s.statusBarang}</Badge>
                     </TableCell>

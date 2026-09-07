@@ -3,6 +3,7 @@ import { Breadcrumb } from "@/components/ui"
 import { getCurrentUser } from "@/lib/current-user"
 import { brandStore, itemStore } from "@/lib/data/master"
 import { shipmentStore } from "@/lib/data/transaksi"
+import { flattenShipmentItems } from "@/lib/shipment-helpers"
 import { Top20View } from "@/components/laporan/Top20View"
 
 export default async function Top20Page() {
@@ -10,6 +11,7 @@ export default async function Top20Page() {
   const shipments = shipmentStore.getAll()
   const brands = brandStore.getAll()
   const items = itemStore.getAll()
+  const shipmentById = Object.fromEntries(shipments.map((s) => [s.id, s]))
 
   return (
     <AppLayout userName={user.name} userRole={user.role}>
@@ -23,14 +25,14 @@ export default async function Top20Page() {
         </div>
 
         <Top20View
-          shipments={shipments.map((s) => ({
-            id: s.id,
-            shipmentName: s.shipmentName,
-            brandId: s.brandId,
-            itemId: s.itemId,
-            qty: s.qty,
-            priceSatuan: s.priceSatuan,
-            tanggalKedatangan: s.tanggalKedatangan,
+          shipments={flattenShipmentItems(shipments).map((it) => ({
+            id: `${it.shipmentId}-${it.poId}-${it.itemId}`,
+            shipmentName: it.shipmentName,
+            brandId: shipmentById[it.shipmentId]?.brandId ?? null,
+            itemId: it.itemId,
+            qty: it.qty,
+            priceSatuan: it.priceSatuan,
+            eta: shipmentById[it.shipmentId]?.eta ?? null,
           }))}
           brandOptions={brands.map((b) => ({ value: b.id, label: b.name }))}
           itemOptions={items.map((i) => ({ value: i.id, label: `${i.itemCode} - ${i.description}` }))}

@@ -18,36 +18,69 @@ export {
 } from "./transaksi-constants"
 
 // ---------------------------------------------------------------------------
-// Input Shipment/Import — gabungan sheet DATABASE + SPREADSHEET lama
+// Input Shipment/Import — gabungan sheet DATABASE + SPREADSHEET lama, ditambah kolom
+// Tgl Pickup/ETD/ETA/ETA Gudang (dulu cuma 1 kolom TANGGAL KEDATANGAN).
+//
+// Hierarki (dasarnya tetap sheet DATABASE, cuma dikelompokkan biar No Invoice/No PO/PIB
+// gak diulang di tiap baris item seperti Excel-nya):
+//   Invoice   — 1 Invoice bisa dikirim beberapa kali (No Invoice, Brand, Negara Asal,
+//               status & jatuh tempo bayar PI — Nilai Billing dihitung otomatis)
+//     Shipment  — 1 PO = 1 kali kirim (No PO, PIB, AIR/SEA, Gudang, Forwarder, Nilai
+//                 Forwarder, status & jatuh tempo bayar FO, status barang/shipment,
+//                 Tgl Pickup/ETD/ETA/ETA Gudang — Total dihitung otomatis)
+//       Item      — itemId, Qty, Harga Satuan (Subtotal dihitung otomatis)
 // ---------------------------------------------------------------------------
 
-export interface Shipment extends BaseRecord {
-  shipmentName: string
-  brandId: string | null
-  countryId: string | null
-  noInvoice: string
-  noPO: string
+export interface ShipmentItem extends BaseRecord {
   itemId: string | null
   qty: number
   priceSatuan: number
-  noPIB: string
+}
+
+/** 1 PO = 1 kali kirim (delivery/pengiriman fisik), makanya PIB, AIR/SEA, tanggal-tanggal,
+ *  dan Forwarder nempel di sini — bukan lagi di header terpisah di atas Invoice. */
+export interface Shipment extends BaseRecord {
+  shipmentName: string
+  /** No PO, ditulis tanpa prefix "No" di UI. */
+  po: string
+  /** URL/path scan dokumen PO — disimpan lokal dulu, nanti dipindah ke Google Drive. */
+  documentUrl: string | null
+  /** PIB, ditulis tanpa prefix "No" di UI — 1 PIB per kedatangan fisik barang (per Shipment). */
+  pib: string
+  /** URL/path scan dokumen PIB — disimpan lokal dulu, nanti dipindah ke Google Drive. */
+  pibDocumentUrl: string | null
   airSea: AirSea
   warehouseId: string | null
   statusBarang: StatusBarang
-  tanggalKedatangan: string | null
-  statusPembayaranPI: StatusPembayaran
-  nilaiBilling: number
-  /** Tanggal jatuh tempo pembayaran ke supplier — field baru, belum ada di Excel lama,
-   *  ditambahkan supaya aturan EWS "Jatuh tempo pembayaran mendekat" bisa jalan. */
-  dueDatePI: string | null
+  /** Tgl pickup barang dari vendor/supplier di negara asal. */
+  tanggalPickup: string | null
+  /** ETD — tanggal keberangkatan dari ekspedisi/forwarder. */
+  etd: string | null
+  /** ETA — tanggal sampai di Pelabuhan Indonesia. EWS "eta-mendekat" & "pib-belum-lengkap" pakai field ini. */
+  eta: string | null
+  /** ETA Gudang — tanggal sampai di gudang PT Mitra (setelah proses pelabuhan selesai). */
+  etaGudang: string | null
   forwarderId: string | null
   statusPembayaranFO: StatusPembayaran
   nilaiForwarder: number
-  /** Tanggal jatuh tempo pembayaran ke forwarder — sama alasannya dengan dueDatePI. */
   dueDateFO: string | null
   statusShipment: StatusShipment
+  items: ShipmentItem[]
 }
-export const shipmentStore = createJsonStore<Shipment>("shipments.json")
+
+/** Invoice = level teratas. 1 Invoice bisa dikirim beberapa kali (beberapa PO/Shipment). */
+export interface Invoice extends BaseRecord {
+  /** No Invoice, ditulis tanpa prefix "No" di UI. */
+  invoice: string
+  brandId: string | null
+  countryId: string | null
+  /** URL/path scan dokumen Invoice — disimpan lokal dulu, nanti dipindah ke Google Drive. */
+  documentUrl: string | null
+  statusPembayaranPI: StatusPembayaran
+  dueDatePI: string | null
+  shipments: Shipment[]
+}
+export const invoiceStore = createJsonStore<Invoice>("invoices.json")
 
 // ---------------------------------------------------------------------------
 // Input Shipment DTD/Launching — sheet DATABASE DTD. GAP (sampeMche - sampeAgent)
@@ -79,7 +112,9 @@ export const shipmentDtdStore = createJsonStore<ShipmentDtd>("shipments_dtd.json
 // ---------------------------------------------------------------------------
 
 export interface PaymentLog extends BaseRecord {
-  shipmentId: string
+  invoiceId: string
+  /** Shipment (PO) yang statusnya diubah — cuma diisi untuk paymentType "FO" (PI tetap per-invoice). */
+  shipmentId: string | null
   paymentType: PaymentType
   status: StatusPembayaran
   note: string | null

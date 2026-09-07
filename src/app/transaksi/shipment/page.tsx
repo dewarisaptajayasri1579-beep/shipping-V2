@@ -1,7 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout"
 import { Card, Breadcrumb } from "@/components/ui"
 import { getCurrentUser } from "@/lib/current-user"
-import { brandStore, countryStore, itemStore, warehouseStore, forwarderStore } from "@/lib/data/master"
+import { brandStore, countryStore, warehouseStore, forwarderStore, itemStore } from "@/lib/data/master"
 import { shipmentStore } from "@/lib/data/transaksi"
 import { ShipmentTable } from "@/components/transaksi/ShipmentTable"
 
@@ -10,9 +10,9 @@ export default async function ShipmentPage() {
   const shipments = shipmentStore.getAll()
   const brands = brandStore.getAll()
   const countries = countryStore.getAll()
-  const items = itemStore.getAll()
   const warehouses = warehouseStore.getAll()
   const forwarders = forwarderStore.getAll()
+  const items = itemStore.getAll()
 
   return (
     <AppLayout userName={user.name} userRole={user.role}>
@@ -30,9 +30,9 @@ export default async function ShipmentPage() {
             rows={shipments}
             brandOptions={brands.map((b) => ({ value: b.id, label: b.name }))}
             countryOptions={countries.map((c) => ({ value: c.id, label: c.name }))}
-            itemOptions={items.map((i) => ({ value: i.id, label: `${i.itemCode} - ${i.description}` }))}
             warehouseOptions={warehouses.map((w) => ({ value: w.id, label: w.name }))}
             forwarderOptions={forwarders.map((f) => ({ value: f.id, label: f.name }))}
+            itemOptions={items.map((i) => ({ value: i.id, label: `${i.itemCode} - ${i.description}` }))}
           />
         </Card>
       </div>

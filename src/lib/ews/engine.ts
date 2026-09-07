@@ -2,6 +2,7 @@ import { shipmentStore, shipmentDtdStore, type Shipment, type ShipmentDtd } from
 import { forwarderStore, forwarderRateStore, brandStore, type ForwarderRate } from "@/lib/data/master"
 import { ewsRuleConfigStore, waSettingStore, alertLogStore, type AlertSeverity } from "@/lib/data/ews"
 import { calcGapDays } from "@/lib/gap"
+import { shipmentTotalValue, flattenShipmentItems, flattenShipmentInvoices } from "@/lib/shipment-helpers"
 import { sendWhatsAppNotification } from "./notify"
 
 const DAY_MS = 1000 * 60 * 60 * 24
@@ -29,7 +30,7 @@ interface Trigger {
 function getTop20ShipmentIds(shipments: Shipment[]): Set<string> {
   return new Set(
     [...shipments]
-      .sort((a, b) => b.qty * b.priceSatuan - a.qty * a.priceSatuan)
+      .sort((a, b) => shipmentTotalValue(b) - shipmentTotalValue(a))
       .slice(0, 20)
       .map((s) => s.id)
   )
@@ -54,8 +55,8 @@ function evaluate(now: Date): Trigger[] {
   if (enabled("eta-mendekat")) {
     const hMinus = param("eta-mendekat", "hMinus", 3)
     for (const s of shipments) {
-      if (s.statusBarang === "BARANG SUDAH DATANG" || !s.tanggalKedatangan) continue
-      const diff = daysUntil(s.tanggalKedatangan, now)
+      if (s.statusBarang === "BARANG SUDAH DATANG" || !s.eta) continue
+      const diff = daysUntil(s.eta, now)
       if (diff <= hMinus) {
         triggers.push({
           ruleId: "eta-mendekat",
@@ -64,8 +65,8 @@ function evaluate(now: Date): Trigger[] {
           severity: diff < 0 ? "critical" : diff <= 1 ? "warning" : "info",
           message:
             diff < 0
-              ? `${s.shipmentName}: ETA ${s.tanggalKedatangan} sudah lewat ${-diff} hari, status barang masih "${s.statusBarang}"`
-              : `${s.shipmentName}: ETA ${s.tanggalKedatangan} (H-${diff}), status barang masih "${s.statusBarang}" — cek ke forwarder/agent`,
+              ? `${s.shipmentName}: ETA ${s.eta} sudah lewat ${-diff} hari, status barang masih "${s.statusBarang}"`
+              : `${s.shipmentName}: ETA ${s.eta} (H-${diff}), status barang masih "${s.statusBarang}" — cek ke forwarder/agent`,
         })
       }
     }
@@ -98,22 +99,24 @@ function evaluate(now: Date): Trigger[] {
   // 3. jatuh-tempo-pembayaran
   if (enabled("jatuh-tempo-pembayaran")) {
     const hMinus = param("jatuh-tempo-pembayaran", "hMinus", 7)
-    for (const s of shipments) {
-      if (s.statusPembayaranPI === "BELUM DIBAYAR" && s.dueDatePI) {
-        const diff = daysUntil(s.dueDatePI, now)
+    for (const inv of flattenShipmentInvoices(shipments)) {
+      if (inv.statusPembayaranPI === "BELUM DIBAYAR" && inv.dueDatePI) {
+        const diff = daysUntil(inv.dueDatePI, now)
         if (diff <= hMinus) {
           triggers.push({
             ruleId: "jatuh-tempo-pembayaran",
             refType: "shipment",
-            refId: `${s.id}-PI`,
+            refId: `${inv.shipmentId}-${inv.invoiceId}-PI`,
             severity: diff < 0 ? "critical" : "warning",
             message:
               diff < 0
-                ? `${s.shipmentName}: pembayaran ke supplier (PI) sudah lewat jatuh tempo ${-diff} hari — eskalasi ke atasan`
-                : `${s.shipmentName}: pembayaran ke supplier (PI) jatuh tempo ${s.dueDatePI} (H-${diff}) — siapkan pembayaran`,
+                ? `${inv.shipmentName} (Invoice ${inv.invoice}): pembayaran ke supplier (PI) sudah lewat jatuh tempo ${-diff} hari — eskalasi ke atasan`
+                : `${inv.shipmentName} (Invoice ${inv.invoice}): pembayaran ke supplier (PI) jatuh tempo ${inv.dueDatePI} (H-${diff}) — siapkan pembayaran`,
           })
         }
       }
+    }
+    for (const s of shipments) {
       if (s.statusPembayaranFO === "BELUM DIBAYAR" && s.dueDateFO) {
         const diff = daysUntil(s.dueDateFO, now)
         if (diff <= hMinus) {
@@ -136,15 +139,15 @@ function evaluate(now: Date): Trigger[] {
   if (enabled("pib-belum-lengkap")) {
     const hMinus = param("pib-belum-lengkap", "hMinus", 5)
     for (const s of shipments) {
-      if (s.noPIB || !s.tanggalKedatangan || s.statusBarang === "BARANG SUDAH DATANG") continue
-      const diff = daysUntil(s.tanggalKedatangan, now)
+      if (s.pib || !s.eta || s.statusBarang === "BARANG SUDAH DATANG") continue
+      const diff = daysUntil(s.eta, now)
       if (diff <= hMinus) {
         triggers.push({
           ruleId: "pib-belum-lengkap",
           refType: "shipment",
           refId: s.id,
           severity: diff < 0 ? "critical" : "warning",
-          message: `${s.shipmentName}: No PIB masih kosong, ETA ${s.tanggalKedatangan} — urus PIB sebelum barang tertahan di pelabuhan`,
+          message: `${s.shipmentName}: PIB masih kosong, ETA ${s.eta} — urus PIB sebelum barang tertahan di pelabuhan`,
         })
       }
     }
@@ -169,22 +172,25 @@ function evaluate(now: Date): Trigger[] {
     }
   }
 
-  // 6. invoice-ganda
+  // 6. invoice-ganda — No Invoice yang sama kepakai di lebih dari 1 Shipment berbeda
+  // (indikasi salah input/copas). Duplikat No PO di dalam 1 invoice yang sama sekarang
+  // memang sah by design (1 Invoice bisa terdiri dari beberapa PO), jadi bukan lagi yang dicek.
   if (enabled("invoice-ganda")) {
-    const byInvoice = new Map<string, Shipment[]>()
-    for (const s of shipments) {
-      if (!s.noInvoice) continue
-      byInvoice.set(s.noInvoice, [...(byInvoice.get(s.noInvoice) ?? []), s])
+    const byInvoice = new Map<string, Set<string>>()
+    for (const inv of flattenShipmentInvoices(shipments)) {
+      if (!inv.invoice) continue
+      const shipmentIds = byInvoice.get(inv.invoice) ?? new Set<string>()
+      shipmentIds.add(inv.shipmentId)
+      byInvoice.set(inv.invoice, shipmentIds)
     }
-    for (const [noInvoice, rows] of byInvoice) {
-      const distinctPO = new Set(rows.map((r) => r.noPO))
-      if (distinctPO.size > 1) {
+    for (const [invoice, shipmentIds] of byInvoice) {
+      if (shipmentIds.size > 1) {
         triggers.push({
           ruleId: "invoice-ganda",
           refType: "shipment",
-          refId: `invoice-${noInvoice}`,
+          refId: `invoice-${invoice}`,
           severity: "critical",
-          message: `No Invoice "${noInvoice}" dipakai untuk ${distinctPO.size} No PO berbeda (${Array.from(distinctPO).join(", ")}) — verifikasi manual sebelum pembayaran`,
+          message: `Invoice "${invoice}" dipakai di ${shipmentIds.size} shipment berbeda — verifikasi manual, kemungkinan salah input`,
         })
       }
     }
@@ -193,20 +199,21 @@ function evaluate(now: Date): Trigger[] {
   // 7. harga-menyimpang
   if (enabled("harga-menyimpang")) {
     const percentThreshold = param("harga-menyimpang", "percentThreshold", 20)
-    for (const s of shipments) {
-      if (!s.itemId) continue
-      const others = shipments.filter((x) => x.itemId === s.itemId && x.id !== s.id)
+    const flatItems = flattenShipmentItems(shipments)
+    for (const item of flatItems) {
+      if (!item.itemId) continue
+      const others = flatItems.filter((x) => x.itemId === item.itemId && x.poId !== item.poId)
       if (others.length === 0) continue
       const avg = others.reduce((sum, x) => sum + x.priceSatuan, 0) / others.length
       if (avg <= 0) continue
-      const deviation = (Math.abs(s.priceSatuan - avg) / avg) * 100
+      const deviation = (Math.abs(item.priceSatuan - avg) / avg) * 100
       if (deviation >= percentThreshold) {
         triggers.push({
           ruleId: "harga-menyimpang",
           refType: "shipment",
-          refId: s.id,
+          refId: `${item.shipmentId}-${item.poId}-${item.itemId}`,
           severity: "warning",
-          message: `${s.shipmentName}: harga satuan ${s.priceSatuan} menyimpang ${deviation.toFixed(0)}% dari rata-rata historis item ini (${avg.toFixed(2)}) — perlu verifikasi tambahan`,
+          message: `${item.shipmentName} (PO ${item.po}): harga satuan ${item.priceSatuan} menyimpang ${deviation.toFixed(0)}% dari rata-rata historis item ini (${avg.toFixed(2)}) — perlu verifikasi tambahan`,
         })
       }
     }
@@ -244,7 +251,8 @@ function evaluate(now: Date): Trigger[] {
   if (enabled("bayar-sebelum-datang")) {
     for (const s of shipments) {
       if (s.statusBarang === "BARANG SUDAH DATANG") continue
-      if (s.statusPembayaranPI === "SUDAH DIBAYAR" || s.statusPembayaranFO === "SUDAH DIBAYAR") {
+      const anyInvoicePaid = s.invoices.some((inv) => inv.statusPembayaranPI === "SUDAH DIBAYAR")
+      if (anyInvoicePaid || s.statusPembayaranFO === "SUDAH DIBAYAR") {
         triggers.push({
           ruleId: "bayar-sebelum-datang",
           refType: "shipment",

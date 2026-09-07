@@ -40,7 +40,7 @@ export const EWS_RULES: EwsRuleDef[] = [
     id: "pib-belum-lengkap",
     category: "keterlambatan",
     label: "Dokumen PIB belum lengkap menjelang kedatangan",
-    description: "H-5 sebelum Tanggal Kedatangan kalau No PIB masih kosong.",
+    description: "H-5 sebelum ETA Pelabuhan Indonesia kalau PIB masih kosong.",
     params: { hMinus: { label: "Kirim mulai H-", default: 5, suffix: "hari" } },
   },
   {
@@ -54,7 +54,7 @@ export const EWS_RULES: EwsRuleDef[] = [
     id: "invoice-ganda",
     category: "fraud",
     label: "Invoice ganda (duplikat)",
-    description: "No Invoice yang sama dipakai untuk No PO yang berbeda — indikasi input dobel untuk shipment berbeda.",
+    description: "Invoice yang sama dipakai di lebih dari 1 shipment berbeda — indikasi salah input/copas.",
     params: {},
   },
   {

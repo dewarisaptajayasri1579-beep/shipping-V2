@@ -17,3 +17,8 @@ node_modules
 
 # File gambar laporan WA sementara — di-generate & dihapus otomatis oleh runDashboardReport()
 public/reports/
+
+# Scan dokumen (PO/Invoice/PIB) upload dari form Tambah Shipment — disimpan lokal dulu
+# sampai integrasi Google Drive siap (lihat DocumentUploadField & /api/upload).
+public/uploads/*
+!public/uploads/.gitkeep

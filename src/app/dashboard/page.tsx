@@ -3,6 +3,7 @@ import { Breadcrumb } from "@/components/ui"
 import { getCurrentUser } from "@/lib/current-user"
 import { brandStore, countryStore } from "@/lib/data/master"
 import { shipmentStore } from "@/lib/data/transaksi"
+import { shipmentTotalBilling } from "@/lib/shipment-helpers"
 import { DashboardView } from "@/components/dashboard/DashboardView"
 
 export default async function DashboardPage() {
@@ -26,12 +27,10 @@ export default async function DashboardPage() {
             shipmentName: s.shipmentName,
             brandId: s.brandId,
             countryId: s.countryId,
-            qty: s.qty,
-            priceSatuan: s.priceSatuan,
             airSea: s.airSea,
             statusBarang: s.statusBarang,
-            tanggalKedatangan: s.tanggalKedatangan,
-            nilaiBilling: s.nilaiBilling,
+            eta: s.eta,
+            nilaiBilling: shipmentTotalBilling(s),
             nilaiForwarder: s.nilaiForwarder,
             statusShipment: s.statusShipment,
           }))}

@@ -29,8 +29,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: LayoutGrid,
         children: [
           { label: "Ringkasan Status Barang", href: "/dashboard" },
-          { label: "KPI Utama", href: "/dashboard/kpi" },
-          { label: "Monitoring Illuvia", href: "/dashboard/illuvia" },
         ],
       },
     ],
@@ -45,7 +43,6 @@ export const NAV_GROUPS: NavGroup[] = [
           { label: "Pengaturan Aturan/Threshold", href: "/smart-fitur/threshold" },
           { label: "Pengaturan Notifikasi WhatsApp", href: "/smart-fitur/notifikasi-wa" },
           { label: "Log Riwayat Alert", href: "/smart-fitur/log-alert" },
-          { label: "Rekomendasi Vendor", href: "/smart-fitur/rekomendasi-vendor" },
         ],
       },
     ],
@@ -74,7 +71,6 @@ export const NAV_GROUPS: NavGroup[] = [
         children: [
           { label: "Shipment per Status/Bulan/Brand", href: "/laporan/status-bulan-brand" },
           { label: "Performa Vendor DTD", href: "/laporan/performa-vendor" },
-          { label: "Pembayaran", href: "/laporan/pembayaran" },
           { label: "Top 20 Shipment Bernilai Tertinggi", href: "/laporan/top-20" },
           { label: "Penilaian/Scoring Vendor", href: "/laporan/scoring-vendor" },
           { label: "Export Excel/PDF", href: "/laporan/export" },
