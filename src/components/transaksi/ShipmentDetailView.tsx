@@ -5,48 +5,82 @@ import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, FileText, ExternalLink } from "lucide-react";
 import { Card, Badge, Button, Dropdown, Modal, Input, Select, CurrencyInput, DatePicker, useToast } from "@/components/ui";
 import { DocumentUploadField } from "./DocumentUploadField";
-import { STATUS_PEMBAYARAN, type StatusPembayaran } from "@/lib/data/transaksi-constants";
-import type { ShipmentRow, ShipmentInvoiceRow, ShipmentPoRow, ShipmentItemRow } from "./ShipmentTable";
+import { shipmentTotalValue } from "@/lib/shipment-helpers";
+import {
+  AIR_SEA,
+  STATUS_BARANG,
+  STATUS_PEMBAYARAN,
+  STATUS_SHIPMENT,
+  type AirSea,
+  type StatusBarang,
+  type StatusPembayaran,
+  type StatusShipment,
+} from "@/lib/data/transaksi-constants";
+import type { InvoiceRow, ShipmentRow, ShipmentItemRow } from "./InvoiceTable";
 
 type OptionList = { value: string; label: string }[];
 
-const STATUS_BAYAR_BADGE: Record<StatusPembayaran, "warning" | "success"> = {
-  "BELUM DIBAYAR": "warning",
-  "SUDAH DIBAYAR": "success",
+const STATUS_BARANG_BADGE: Record<StatusBarang, "warning" | "info" | "success"> = {
+  "BELUM DATANG": "warning",
+  "ON GOING": "info",
+  "BARANG SUDAH DATANG": "success",
 };
+
+const toOptions = (values: readonly string[]) => values.map((v) => ({ value: v, label: v }));
 
 function formatRupiah(amount: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount);
 }
 
-const emptyInvoiceForm = { invoice: "", nilaiBilling: 0, statusPembayaranPI: "BELUM DIBAYAR" as StatusPembayaran, dueDatePI: "", documentUrl: null as string | null };
-const emptyPoForm = { po: "", documentUrl: null as string | null };
+const emptyShipmentForm = {
+  shipmentName: "",
+  po: "",
+  documentUrl: null as string | null,
+  pib: "",
+  pibDocumentUrl: null as string | null,
+  airSea: "AIR" as AirSea,
+  warehouseId: "",
+  statusBarang: "BELUM DATANG" as StatusBarang,
+  tanggalPickup: "",
+  etd: "",
+  eta: "",
+  etaGudang: "",
+  forwarderId: "",
+  statusPembayaranFO: "BELUM DIBAYAR" as StatusPembayaran,
+  nilaiForwarder: 0,
+  dueDateFO: "",
+  statusShipment: "PENDING INVOICE FW" as StatusShipment,
+};
 const emptyItemForm = { itemId: "", qty: 0, priceSatuan: 0 };
 
-/** Kelola Invoice > PO > Item milik 1 shipment. Tiap perubahan nge-PATCH seluruh objek
- *  Shipment (bukan endpoint granular per-invoice/po/item) — lebih simpel karena layer
- *  data masih JSON file per shipment, bukan tabel relasional terpisah. */
-export const ShipmentDetailView: React.FC<{ shipment: ShipmentRow; itemOptions: OptionList }> = ({ shipment, itemOptions }) => {
+/** Kelola Shipment (PO, 1 PO = 1 kali kirim) > Item milik 1 Invoice. Tiap perubahan
+ *  nge-PATCH seluruh objek Invoice (bukan endpoint granular per-shipment/item) — lebih
+ *  simpel karena layer data masih JSON file per invoice, bukan tabel relasional terpisah. */
+export const ShipmentDetailView: React.FC<{
+  invoice: InvoiceRow;
+  itemOptions: OptionList;
+  warehouseOptions: OptionList;
+  forwarderOptions: OptionList;
+}> = ({ invoice, itemOptions, warehouseOptions, forwarderOptions }) => {
   const router = useRouter();
   const toast = useToast();
+  const labelOf = (opts: OptionList, id: string | null) => (id ? opts.find((o) => o.value === id)?.label ?? id : "-");
   const itemLabel = (id: string | null) => (id ? itemOptions.find((o) => o.value === id)?.label ?? id : "-");
 
   const [saving, setSaving] = useState(false);
-  const [invoiceModal, setInvoiceModal] = useState<{ mode: "create" | "edit"; invoice?: ShipmentInvoiceRow } | null>(null);
-  const [invoiceForm, setInvoiceForm] = useState(emptyInvoiceForm);
-  const [poModal, setPoModal] = useState<{ mode: "create" | "edit"; invoiceId: string; po?: ShipmentPoRow } | null>(null);
-  const [poForm, setPoForm] = useState(emptyPoForm);
-  const [itemModal, setItemModal] = useState<{ mode: "create" | "edit"; invoiceId: string; poId: string; item?: ShipmentItemRow } | null>(null);
+  const [shipmentModal, setShipmentModal] = useState<{ mode: "create" | "edit"; shipment?: ShipmentRow } | null>(null);
+  const [shipmentForm, setShipmentForm] = useState(emptyShipmentForm);
+  const [itemModal, setItemModal] = useState<{ mode: "create" | "edit"; shipmentId: string; item?: ShipmentItemRow } | null>(null);
   const [itemForm, setItemForm] = useState(emptyItemForm);
-  const [deleteTarget, setDeleteTarget] = useState<{ kind: "invoice" | "po" | "item"; invoiceId: string; poId?: string; itemId?: string; label: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ kind: "shipment" | "item"; shipmentId: string; itemId?: string; label: string } | null>(null);
 
-  const patchInvoices = async (invoices: ShipmentInvoiceRow[]) => {
+  const patchShipments = async (shipments: ShipmentRow[]) => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/transaksi/shipments/${shipment.id}`, {
+      const res = await fetch(`/api/transaksi/invoices/${invoice.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...shipment, invoices }),
+        body: JSON.stringify({ ...invoice, shipments }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -63,84 +97,69 @@ export const ShipmentDetailView: React.FC<{ shipment: ShipmentRow; itemOptions: 
     }
   };
 
-  const openInvoiceCreate = () => {
-    setInvoiceForm(emptyInvoiceForm);
-    setInvoiceModal({ mode: "create" });
+  const openShipmentCreate = () => {
+    setShipmentForm(emptyShipmentForm);
+    setShipmentModal({ mode: "create" });
   };
-  const openInvoiceEdit = (inv: ShipmentInvoiceRow) => {
-    setInvoiceForm({ invoice: inv.invoice, nilaiBilling: inv.nilaiBilling, statusPembayaranPI: inv.statusPembayaranPI, dueDatePI: inv.dueDatePI ?? "", documentUrl: inv.documentUrl });
-    setInvoiceModal({ mode: "edit", invoice: inv });
-  };
-  const saveInvoice = async () => {
-    if (!invoiceForm.invoice.trim()) {
-      toast.error("Invoice wajib diisi");
-      return;
-    }
-    const invoices =
-      invoiceModal?.mode === "create"
-        ? [...shipment.invoices, { id: crypto.randomUUID(), ...invoiceForm, purchaseOrders: [] }]
-        : shipment.invoices.map((inv) => (inv.id === invoiceModal?.invoice?.id ? { ...inv, ...invoiceForm } : inv));
-    if (await patchInvoices(invoices)) {
-      toast.success("Invoice disimpan");
-      setInvoiceModal(null);
-    }
-  };
-
-  const openPoCreate = (invoiceId: string) => {
-    setPoForm(emptyPoForm);
-    setPoModal({ mode: "create", invoiceId });
-  };
-  const openPoEdit = (invoiceId: string, po: ShipmentPoRow) => {
-    setPoForm({ po: po.po, documentUrl: po.documentUrl });
-    setPoModal({ mode: "edit", invoiceId, po });
-  };
-  const savePo = async () => {
-    if (!poForm.po.trim()) {
-      toast.error("PO wajib diisi");
-      return;
-    }
-    const invoices = shipment.invoices.map((inv) => {
-      if (inv.id !== poModal?.invoiceId) return inv;
-      const purchaseOrders =
-        poModal.mode === "create"
-          ? [...inv.purchaseOrders, { id: crypto.randomUUID(), ...poForm, items: [] }]
-          : inv.purchaseOrders.map((po) => (po.id === poModal.po?.id ? { ...po, ...poForm } : po));
-      return { ...inv, purchaseOrders };
+  const openShipmentEdit = (s: ShipmentRow) => {
+    setShipmentForm({
+      shipmentName: s.shipmentName,
+      po: s.po,
+      documentUrl: s.documentUrl,
+      pib: s.pib,
+      pibDocumentUrl: s.pibDocumentUrl,
+      airSea: s.airSea as AirSea,
+      warehouseId: s.warehouseId ?? "",
+      statusBarang: s.statusBarang as StatusBarang,
+      tanggalPickup: s.tanggalPickup ?? "",
+      etd: s.etd ?? "",
+      eta: s.eta ?? "",
+      etaGudang: s.etaGudang ?? "",
+      forwarderId: s.forwarderId ?? "",
+      statusPembayaranFO: s.statusPembayaranFO,
+      nilaiForwarder: s.nilaiForwarder,
+      dueDateFO: s.dueDateFO ?? "",
+      statusShipment: s.statusShipment as StatusShipment,
     });
-    if (await patchInvoices(invoices)) {
-      toast.success("PO disimpan");
-      setPoModal(null);
+    setShipmentModal({ mode: "edit", shipment: s });
+  };
+  const saveShipment = async () => {
+    if (!shipmentForm.po.trim()) {
+      toast.error("No PO wajib diisi");
+      return;
+    }
+    const shipments =
+      shipmentModal?.mode === "create"
+        ? [...invoice.shipments, { id: crypto.randomUUID(), ...shipmentForm, items: [] }]
+        : invoice.shipments.map((s) => (s.id === shipmentModal?.shipment?.id ? { ...s, ...shipmentForm } : s));
+    if (await patchShipments(shipments)) {
+      toast.success("Shipment (PO) disimpan");
+      setShipmentModal(null);
     }
   };
 
-  const openItemCreate = (invoiceId: string, poId: string) => {
+  const openItemCreate = (shipmentId: string) => {
     setItemForm(emptyItemForm);
-    setItemModal({ mode: "create", invoiceId, poId });
+    setItemModal({ mode: "create", shipmentId });
   };
-  const openItemEdit = (invoiceId: string, poId: string, item: ShipmentItemRow) => {
+  const openItemEdit = (shipmentId: string, item: ShipmentItemRow) => {
     setItemForm({ itemId: item.itemId ?? "", qty: item.qty, priceSatuan: item.priceSatuan });
-    setItemModal({ mode: "edit", invoiceId, poId, item });
+    setItemModal({ mode: "edit", shipmentId, item });
   };
   const saveItem = async () => {
     if (!itemForm.itemId) {
       toast.error("Item wajib dipilih");
       return;
     }
-    const invoices = shipment.invoices.map((inv) => {
-      if (inv.id !== itemModal?.invoiceId) return inv;
-      return {
-        ...inv,
-        purchaseOrders: inv.purchaseOrders.map((po) => {
-          if (po.id !== itemModal?.poId) return po;
-          const items =
-            itemModal.mode === "create"
-              ? [...po.items, { id: crypto.randomUUID(), ...itemForm }]
-              : po.items.map((it) => (it.id === itemModal.item?.id ? { ...it, ...itemForm } : it));
-          return { ...po, items };
-        }),
-      };
+    const shipments = invoice.shipments.map((s) => {
+      if (s.id !== itemModal?.shipmentId) return s;
+      const items =
+        itemModal.mode === "create"
+          ? [...s.items, { id: crypto.randomUUID(), ...itemForm }]
+          : s.items.map((it) => (it.id === itemModal.item?.id ? { ...it, ...itemForm } : it));
+      return { ...s, items };
     });
-    if (await patchInvoices(invoices)) {
+    if (await patchShipments(shipments)) {
       toast.success("Item disimpan");
       setItemModal(null);
     }
@@ -148,25 +167,11 @@ export const ShipmentDetailView: React.FC<{ shipment: ShipmentRow; itemOptions: 
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    let invoices = shipment.invoices;
-    if (deleteTarget.kind === "invoice") {
-      invoices = invoices.filter((inv) => inv.id !== deleteTarget.invoiceId);
-    } else if (deleteTarget.kind === "po") {
-      invoices = invoices.map((inv) =>
-        inv.id !== deleteTarget.invoiceId ? inv : { ...inv, purchaseOrders: inv.purchaseOrders.filter((po) => po.id !== deleteTarget.poId) }
-      );
-    } else {
-      invoices = invoices.map((inv) => {
-        if (inv.id !== deleteTarget.invoiceId) return inv;
-        return {
-          ...inv,
-          purchaseOrders: inv.purchaseOrders.map((po) =>
-            po.id !== deleteTarget.poId ? po : { ...po, items: po.items.filter((it) => it.id !== deleteTarget.itemId) }
-          ),
-        };
-      });
-    }
-    if (await patchInvoices(invoices)) {
+    const shipments =
+      deleteTarget.kind === "shipment"
+        ? invoice.shipments.filter((s) => s.id !== deleteTarget.shipmentId)
+        : invoice.shipments.map((s) => (s.id !== deleteTarget.shipmentId ? s : { ...s, items: s.items.filter((it) => it.id !== deleteTarget.itemId) }));
+    if (await patchShipments(shipments)) {
       toast.success("Data dihapus");
       setDeleteTarget(null);
     }
@@ -175,48 +180,60 @@ export const ShipmentDetailView: React.FC<{ shipment: ShipmentRow; itemOptions: 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-slate-800 dark:text-fg">Invoice</h2>
-        <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={openInvoiceCreate}>
-          Tambah Invoice
+        <h2 className="text-lg font-bold text-slate-800 dark:text-fg">Shipment (PO) — 1 PO = 1 kali kirim</h2>
+        <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={openShipmentCreate}>
+          Tambah Shipment
         </Button>
       </div>
 
-      {shipment.invoices.length === 0 ? (
+      {invoice.shipments.length === 0 ? (
         <Card variant="panel" padding="lg">
-          <p className="text-sm text-slate-500 dark:text-fg-muted text-center">Belum ada invoice. Klik &quot;Tambah Invoice&quot; untuk mulai.</p>
+          <p className="text-sm text-slate-500 dark:text-fg-muted text-center">Belum ada shipment. Klik &quot;Tambah Shipment&quot; untuk mulai.</p>
         </Card>
       ) : (
-        shipment.invoices.map((inv) => (
-          <Card key={inv.id} variant="panel" padding="lg">
+        invoice.shipments.map((s) => (
+          <Card key={s.id} variant="panel" padding="lg">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-bold text-slate-800 dark:text-fg">{inv.invoice || "(tanpa no)"}</p>
-                  <Badge variant={STATUS_BAYAR_BADGE[inv.statusPembayaranPI]}>{inv.statusPembayaranPI}</Badge>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-bold text-slate-800 dark:text-fg">{s.shipmentName || s.po || "(shipment baru)"}</p>
+                  <Badge variant={STATUS_BARANG_BADGE[s.statusBarang as StatusBarang]}>{s.statusBarang}</Badge>
+                  <Badge variant="secondary">{s.airSea}</Badge>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-fg-muted">
-                  Nilai Billing: <span className="font-semibold">{formatRupiah(inv.nilaiBilling)}</span>
-                  {inv.dueDatePI && <> · Jatuh tempo PI: {inv.dueDatePI}</>}
+                  PO: <span className="font-semibold">{s.po || "-"}</span> · PIB: <span className="font-semibold">{s.pib || "-"}</span> · Gudang:{" "}
+                  <span className="font-semibold">{labelOf(warehouseOptions, s.warehouseId)}</span> · Forwarder:{" "}
+                  <span className="font-semibold">{labelOf(forwarderOptions, s.forwarderId)}</span>
                 </p>
-                {inv.documentUrl && (
-                  <a href={inv.documentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-[var(--accent-primary)] hover:underline">
-                    <FileText className="w-3.5 h-3.5" /> Scan Invoice <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
+                <p className="text-sm text-slate-600 dark:text-fg-muted">
+                  Tgl Pickup: {s.tanggalPickup || "-"} · ETD: {s.etd || "-"} · ETA: {s.eta || "-"} · ETA Gudang: {s.etaGudang || "-"}
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {s.documentUrl && (
+                    <a href={s.documentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-[var(--accent-primary)] hover:underline">
+                      <FileText className="w-3.5 h-3.5" /> Scan PO <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  {s.pibDocumentUrl && (
+                    <a href={s.pibDocumentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-[var(--accent-primary)] hover:underline">
+                      <FileText className="w-3.5 h-3.5" /> Scan PIB <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
               </div>
               <Dropdown
                 trigger={
-                  <button type="button" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-surface-hover text-slate-500 dark:text-fg-muted cursor-pointer" aria-label="Aksi Invoice">
+                  <button type="button" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-surface-hover text-slate-500 dark:text-fg-muted cursor-pointer" aria-label="Aksi Shipment">
                     <Pencil className="w-4 h-4" />
                   </button>
                 }
                 items={[
-                  { label: "Edit Invoice", icon: Pencil, onClick: () => openInvoiceEdit(inv) },
+                  { label: "Edit Shipment", icon: Pencil, onClick: () => openShipmentEdit(s) },
                   {
-                    label: "Hapus Invoice",
+                    label: "Hapus Shipment",
                     icon: Trash2,
                     danger: true,
-                    onClick: () => setDeleteTarget({ kind: "invoice", invoiceId: inv.id, label: inv.invoice || "invoice ini" }),
+                    onClick: () => setDeleteTarget({ kind: "shipment", shipmentId: s.id, label: s.shipmentName || s.po || "shipment ini" }),
                   },
                 ]}
               />
@@ -224,102 +241,60 @@ export const ShipmentDetailView: React.FC<{ shipment: ShipmentRow; itemOptions: 
 
             <div className="mt-4 pl-4 border-l-2 border-slate-200 dark:border-line space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-700 dark:text-fg-secondary">Purchase Order</h3>
-                <Button variant="outline" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => openPoCreate(inv.id)}>
-                  Tambah PO
+                <h3 className="text-sm font-bold text-slate-700 dark:text-fg-secondary">Item</h3>
+                <Button variant="outline" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => openItemCreate(s.id)}>
+                  Tambah Item
                 </Button>
               </div>
 
-              {inv.purchaseOrders.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-fg-muted">Belum ada PO di invoice ini.</p>
+              {s.items.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-fg-muted">Belum ada item.</p>
               ) : (
-                inv.purchaseOrders.map((po) => {
-                  const poTotal = po.items.reduce((sum, it) => sum + it.qty * it.priceSatuan, 0);
-                  return (
-                    <div key={po.id} className="rounded-xl border border-slate-200/80 dark:border-line p-3.5 space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <p className="font-semibold text-slate-800 dark:text-fg">{po.po || "(tanpa no)"}</p>
-                          {po.documentUrl && (
-                            <a href={po.documentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-[var(--accent-primary)] hover:underline">
-                              <FileText className="w-3.5 h-3.5" /> Scan PO <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
-                        </div>
-                        <Dropdown
-                          trigger={
-                            <button type="button" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-surface-hover text-slate-500 dark:text-fg-muted cursor-pointer" aria-label="Aksi PO">
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                          }
-                          items={[
-                            { label: "Edit PO", icon: Pencil, onClick: () => openPoEdit(inv.id, po) },
-                            {
-                              label: "Hapus PO",
-                              icon: Trash2,
-                              danger: true,
-                              onClick: () => setDeleteTarget({ kind: "po", invoiceId: inv.id, poId: po.id, label: po.po || "PO ini" }),
-                            },
-                          ]}
-                        />
-                      </div>
-
-                      {po.items.length === 0 ? (
-                        <p className="text-xs text-slate-500 dark:text-fg-muted">Belum ada item.</p>
-                      ) : (
-                        <div className="overflow-x-auto rounded-lg border border-slate-200/80 dark:border-line">
-                          <table className="w-full text-sm">
-                            <thead className="bg-slate-50 dark:bg-surface-hover">
-                              <tr className="text-left text-xs font-bold text-slate-600 dark:text-fg-muted">
-                                <th className="px-3 py-2">Item</th>
-                                <th className="px-3 py-2">Qty</th>
-                                <th className="px-3 py-2">Harga Satuan</th>
-                                <th className="px-3 py-2">Subtotal</th>
-                                <th className="px-3 py-2 w-16" />
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {po.items.map((it) => (
-                                <tr key={it.id} className="border-t border-slate-100 dark:border-line">
-                                  <td className="px-3 py-2 font-medium text-slate-800 dark:text-fg">{itemLabel(it.itemId)}</td>
-                                  <td className="px-3 py-2">{it.qty.toLocaleString("id-ID")}</td>
-                                  <td className="px-3 py-2">{formatRupiah(it.priceSatuan)}</td>
-                                  <td className="px-3 py-2 font-semibold">{formatRupiah(it.qty * it.priceSatuan)}</td>
-                                  <td className="px-3 py-2">
-                                    <div className="flex items-center gap-1">
-                                      <button type="button" onClick={() => openItemEdit(inv.id, po.id, it)} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-surface-hover text-slate-500 dark:text-fg-muted cursor-pointer" aria-label="Edit item">
-                                        <Pencil className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setDeleteTarget({ kind: "item", invoiceId: inv.id, poId: po.id, itemId: it.id, label: itemLabel(it.itemId) })}
-                                        className="p-1 rounded hover:bg-slate-100 dark:hover:bg-surface-hover text-red-500 cursor-pointer"
-                                        aria-label="Hapus item"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                              <tr className="border-t border-slate-100 dark:border-line font-bold">
-                                <td className="px-3 py-2" colSpan={3}>
-                                  Total PO
-                                </td>
-                                <td className="px-3 py-2">{formatRupiah(poTotal)}</td>
-                                <td />
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-
-                      <Button variant="ghost" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => openItemCreate(inv.id, po.id)}>
-                        Tambah Item
-                      </Button>
-                    </div>
-                  );
-                })
+                <div className="overflow-x-auto rounded-lg border border-slate-200/80 dark:border-line">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 dark:bg-surface-hover">
+                      <tr className="text-left text-xs font-bold text-slate-600 dark:text-fg-muted">
+                        <th className="px-3 py-2">Item</th>
+                        <th className="px-3 py-2">Qty</th>
+                        <th className="px-3 py-2">Harga Satuan</th>
+                        <th className="px-3 py-2">Subtotal</th>
+                        <th className="px-3 py-2 w-16" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {s.items.map((it) => (
+                        <tr key={it.id} className="border-t border-slate-100 dark:border-line">
+                          <td className="px-3 py-2 font-medium text-slate-800 dark:text-fg">{itemLabel(it.itemId)}</td>
+                          <td className="px-3 py-2">{it.qty.toLocaleString("id-ID")}</td>
+                          <td className="px-3 py-2">{formatRupiah(it.priceSatuan)}</td>
+                          <td className="px-3 py-2 font-semibold">{formatRupiah(it.qty * it.priceSatuan)}</td>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-1">
+                              <button type="button" onClick={() => openItemEdit(s.id, it)} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-surface-hover text-slate-500 dark:text-fg-muted cursor-pointer" aria-label="Edit item">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteTarget({ kind: "item", shipmentId: s.id, itemId: it.id, label: itemLabel(it.itemId) })}
+                                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-surface-hover text-red-500 cursor-pointer"
+                                aria-label="Hapus item"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="border-t border-slate-100 dark:border-line font-bold">
+                        <td className="px-3 py-2" colSpan={3}>
+                          Total Shipment
+                        </td>
+                        <td className="px-3 py-2">{formatRupiah(shipmentTotalValue(s))}</td>
+                        <td />
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </Card>
@@ -327,53 +302,63 @@ export const ShipmentDetailView: React.FC<{ shipment: ShipmentRow; itemOptions: 
       )}
 
       <Modal
-        isOpen={invoiceModal !== null}
-        onClose={() => setInvoiceModal(null)}
-        title={invoiceModal?.mode === "create" ? "Tambah Invoice" : "Edit Invoice"}
+        isOpen={shipmentModal !== null}
+        onClose={() => setShipmentModal(null)}
+        title={shipmentModal?.mode === "create" ? "Tambah Shipment" : "Edit Shipment"}
+        size="lg"
         footer={
-          <div className="flex items-center justify-end gap-3 w-full">
-            <Button variant="ghost" onClick={() => setInvoiceModal(null)}>
-              Batal
-            </Button>
-            <Button variant="primary" isLoading={saving} onClick={saveInvoice}>
+          <div className="flex flex-row-reverse items-center justify-start gap-3 w-full">
+            <Button variant="primary" isLoading={saving} onClick={saveShipment}>
               Simpan
+            </Button>
+            <Button variant="ghost" onClick={() => setShipmentModal(null)}>
+              Batal
             </Button>
           </div>
         }
       >
-        <div className="space-y-4">
-          <Input label="Invoice" value={invoiceForm.invoice} onChange={(e) => setInvoiceForm((f) => ({ ...f, invoice: e.target.value }))} />
-          <CurrencyInput label="Nilai Billing" value={invoiceForm.nilaiBilling} onChange={(v) => setInvoiceForm((f) => ({ ...f, nilaiBilling: v }))} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <Input label="Nama Shipment (label bebas)" value={shipmentForm.shipmentName} onChange={(e) => setShipmentForm((f) => ({ ...f, shipmentName: e.target.value }))} />
+          </div>
+          <Input label="PO" value={shipmentForm.po} onChange={(e) => setShipmentForm((f) => ({ ...f, po: e.target.value }))} />
+          <Select label="AIR/SEA" options={toOptions(AIR_SEA)} value={shipmentForm.airSea} onChange={(v) => setShipmentForm((f) => ({ ...f, airSea: v as AirSea }))} searchable={false} />
+          <Input label="PIB" value={shipmentForm.pib} onChange={(e) => setShipmentForm((f) => ({ ...f, pib: e.target.value }))} />
+          <Select label="Gudang" options={warehouseOptions} value={shipmentForm.warehouseId} onChange={(v) => setShipmentForm((f) => ({ ...f, warehouseId: v }))} placeholder="Pilih gudang" />
           <Select
-            label="Status Pembayaran PI"
-            options={STATUS_PEMBAYARAN.map((s) => ({ value: s, label: s }))}
-            value={invoiceForm.statusPembayaranPI}
-            onChange={(v) => setInvoiceForm((f) => ({ ...f, statusPembayaranPI: v as StatusPembayaran }))}
+            label="Status Barang"
+            options={toOptions(STATUS_BARANG)}
+            value={shipmentForm.statusBarang}
+            onChange={(v) => setShipmentForm((f) => ({ ...f, statusBarang: v as StatusBarang }))}
             searchable={false}
           />
-          <DatePicker label="Jatuh Tempo Pembayaran PI" value={invoiceForm.dueDatePI} onChange={(e) => setInvoiceForm((f) => ({ ...f, dueDatePI: e.target.value }))} />
-          <DocumentUploadField label="Scan Invoice" value={invoiceForm.documentUrl} onChange={(url) => setInvoiceForm((f) => ({ ...f, documentUrl: url }))} />
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={poModal !== null}
-        onClose={() => setPoModal(null)}
-        title={poModal?.mode === "create" ? "Tambah PO" : "Edit PO"}
-        footer={
-          <div className="flex items-center justify-end gap-3 w-full">
-            <Button variant="ghost" onClick={() => setPoModal(null)}>
-              Batal
-            </Button>
-            <Button variant="primary" isLoading={saving} onClick={savePo}>
-              Simpan
-            </Button>
+          <Select
+            label="Status Shipment"
+            options={toOptions(STATUS_SHIPMENT)}
+            value={shipmentForm.statusShipment}
+            onChange={(v) => setShipmentForm((f) => ({ ...f, statusShipment: v as StatusShipment }))}
+            searchable={false}
+          />
+          <DatePicker label="Tgl Pickup (Vendor)" value={shipmentForm.tanggalPickup} onChange={(e) => setShipmentForm((f) => ({ ...f, tanggalPickup: e.target.value }))} />
+          <DatePicker label="ETD (Keberangkatan)" value={shipmentForm.etd} onChange={(e) => setShipmentForm((f) => ({ ...f, etd: e.target.value }))} />
+          <DatePicker label="ETA (Sampai Pelabuhan Indonesia)" value={shipmentForm.eta} onChange={(e) => setShipmentForm((f) => ({ ...f, eta: e.target.value }))} />
+          <DatePicker label="ETA Gudang (Sampai Gudang PT)" value={shipmentForm.etaGudang} onChange={(e) => setShipmentForm((f) => ({ ...f, etaGudang: e.target.value }))} />
+          <Select label="Forwarder" options={forwarderOptions} value={shipmentForm.forwarderId} onChange={(v) => setShipmentForm((f) => ({ ...f, forwarderId: v }))} placeholder="Pilih forwarder" />
+          <Select
+            label="Status Pembayaran FO"
+            options={toOptions(STATUS_PEMBAYARAN)}
+            value={shipmentForm.statusPembayaranFO}
+            onChange={(v) => setShipmentForm((f) => ({ ...f, statusPembayaranFO: v as StatusPembayaran }))}
+            searchable={false}
+          />
+          <CurrencyInput label="Nilai Forwarder" value={shipmentForm.nilaiForwarder} onChange={(v) => setShipmentForm((f) => ({ ...f, nilaiForwarder: v }))} />
+          <DatePicker label="Jatuh Tempo Pembayaran FO" value={shipmentForm.dueDateFO} onChange={(e) => setShipmentForm((f) => ({ ...f, dueDateFO: e.target.value }))} />
+          <div className="sm:col-span-2">
+            <DocumentUploadField label="Scan PO" value={shipmentForm.documentUrl} onChange={(url) => setShipmentForm((f) => ({ ...f, documentUrl: url }))} />
           </div>
-        }
-      >
-        <div className="space-y-4">
-          <Input label="PO" value={poForm.po} onChange={(e) => setPoForm((f) => ({ ...f, po: e.target.value }))} />
-          <DocumentUploadField label="Scan PO" value={poForm.documentUrl} onChange={(url) => setPoForm((f) => ({ ...f, documentUrl: url }))} />
+          <div className="sm:col-span-2">
+            <DocumentUploadField label="Scan PIB" value={shipmentForm.pibDocumentUrl} onChange={(url) => setShipmentForm((f) => ({ ...f, pibDocumentUrl: url }))} />
+          </div>
         </div>
       </Modal>
 
@@ -382,12 +367,12 @@ export const ShipmentDetailView: React.FC<{ shipment: ShipmentRow; itemOptions: 
         onClose={() => setItemModal(null)}
         title={itemModal?.mode === "create" ? "Tambah Item" : "Edit Item"}
         footer={
-          <div className="flex items-center justify-end gap-3 w-full">
-            <Button variant="ghost" onClick={() => setItemModal(null)}>
-              Batal
-            </Button>
+          <div className="flex flex-row-reverse items-center justify-start gap-3 w-full">
             <Button variant="primary" isLoading={saving} onClick={saveItem}>
               Simpan
+            </Button>
+            <Button variant="ghost" onClick={() => setItemModal(null)}>
+              Batal
             </Button>
           </div>
         }

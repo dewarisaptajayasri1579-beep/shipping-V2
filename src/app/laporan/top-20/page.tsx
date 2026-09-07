@@ -2,16 +2,17 @@ import { AppLayout } from "@/components/layout/AppLayout"
 import { Breadcrumb } from "@/components/ui"
 import { getCurrentUser } from "@/lib/current-user"
 import { brandStore, itemStore } from "@/lib/data/master"
-import { shipmentStore } from "@/lib/data/transaksi"
-import { flattenShipmentItems } from "@/lib/shipment-helpers"
+import { invoiceStore } from "@/lib/data/transaksi"
+import { flattenInvoiceItems } from "@/lib/shipment-helpers"
 import { Top20View } from "@/components/laporan/Top20View"
 
 export default async function Top20Page() {
   const user = await getCurrentUser()
-  const shipments = shipmentStore.getAll()
+  const invoices = invoiceStore.getAll()
   const brands = brandStore.getAll()
   const items = itemStore.getAll()
-  const shipmentById = Object.fromEntries(shipments.map((s) => [s.id, s]))
+  const invoiceById = Object.fromEntries(invoices.map((inv) => [inv.id, inv]))
+  const shipmentById = Object.fromEntries(invoices.flatMap((inv) => inv.shipments).map((s) => [s.id, s]))
 
   return (
     <AppLayout userName={user.name} userRole={user.role}>
@@ -25,10 +26,10 @@ export default async function Top20Page() {
         </div>
 
         <Top20View
-          shipments={flattenShipmentItems(shipments).map((it) => ({
-            id: `${it.shipmentId}-${it.poId}-${it.itemId}`,
+          shipments={flattenInvoiceItems(invoices).map((it) => ({
+            id: it.id,
             shipmentName: it.shipmentName,
-            brandId: shipmentById[it.shipmentId]?.brandId ?? null,
+            brandId: invoiceById[it.invoiceId]?.brandId ?? null,
             itemId: it.itemId,
             qty: it.qty,
             priceSatuan: it.priceSatuan,

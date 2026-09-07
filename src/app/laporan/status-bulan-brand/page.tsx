@@ -2,18 +2,19 @@ import { AppLayout } from "@/components/layout/AppLayout"
 import { Card, Breadcrumb } from "@/components/ui"
 import { getCurrentUser } from "@/lib/current-user"
 import { brandStore } from "@/lib/data/master"
-import { shipmentStore } from "@/lib/data/transaksi"
+import { invoiceStore } from "@/lib/data/transaksi"
 import { STATUS_BARANG } from "@/lib/data/transaksi-constants"
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
 
 export default async function LaporanStatusBulanBrandPage() {
   const user = await getCurrentUser()
-  const shipments = shipmentStore.getAll()
+  const invoices = invoiceStore.getAll()
   const brands = brandStore.getAll()
+  const shipments = invoices.flatMap((inv) => inv.shipments)
 
   const byBrandStatus = brands.map((b) => {
-    const rows = shipments.filter((s) => s.brandId === b.id)
+    const rows = invoices.filter((inv) => inv.brandId === b.id).flatMap((inv) => inv.shipments)
     const counts = Object.fromEntries(STATUS_BARANG.map((st) => [st, rows.filter((r) => r.statusBarang === st).length]))
     return { brand: b.name, total: rows.length, counts }
   })

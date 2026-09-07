@@ -6,23 +6,24 @@ import { Wallet, Trash2 } from "lucide-react";
 import { FilterableTable, type FilterableColumn, Badge, Button, Modal, Select, Textarea, DatePicker, useToast } from "@/components/ui";
 import { STATUS_PEMBAYARAN, PAYMENT_TYPES, PAYMENT_TYPE_LABEL, type StatusPembayaran, type PaymentType } from "@/lib/data/transaksi-constants";
 
+export interface PaymentShipmentRow {
+  id: string;
+  shipmentName: string;
+  po: string;
+  statusPembayaranFO: StatusPembayaran;
+}
+
 export interface PaymentInvoiceRow {
   id: string;
   invoice: string;
   statusPembayaranPI: StatusPembayaran;
-}
-
-export interface PaymentShipmentRow {
-  id: string;
-  shipmentName: string;
-  invoices: PaymentInvoiceRow[];
-  statusPembayaranFO: StatusPembayaran;
+  shipments: PaymentShipmentRow[];
 }
 
 export interface PaymentLogRow {
   id: string;
-  shipmentId: string;
-  invoiceId: string | null;
+  invoiceId: string;
+  shipmentId: string | null;
   paymentType: PaymentType;
   status: StatusPembayaran;
   note: string | null;
@@ -38,38 +39,38 @@ const toOptions = (values: readonly string[]) => values.map((v) => ({ value: v, 
 
 interface FormState {
   paymentType: PaymentType;
-  invoiceId: string;
+  shipmentId: string;
   status: StatusPembayaran;
   note: string;
   changedAt: string;
 }
 
-const emptyForm = (invoiceId = ""): FormState => ({
+const emptyForm = (shipmentId = ""): FormState => ({
   paymentType: "PI",
-  invoiceId,
+  shipmentId,
   status: "SUDAH DIBAYAR",
   note: "",
   changedAt: new Date().toISOString().slice(0, 10),
 });
 
-export const PaymentStatusTable: React.FC<{ rows: PaymentShipmentRow[]; logs: PaymentLogRow[] }> = ({ rows, logs }) => {
+export const PaymentStatusTable: React.FC<{ rows: PaymentInvoiceRow[]; logs: PaymentLogRow[] }> = ({ rows, logs }) => {
   const router = useRouter();
   const toast = useToast();
 
-  const [updateTarget, setUpdateTarget] = useState<PaymentShipmentRow | null>(null);
+  const [updateTarget, setUpdateTarget] = useState<PaymentInvoiceRow | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [submitting, setSubmitting] = useState(false);
   const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
 
-  const openUpdate = (r: PaymentShipmentRow) => {
-    setForm(emptyForm(r.invoices[0]?.id ?? ""));
+  const openUpdate = (r: PaymentInvoiceRow) => {
+    setForm(emptyForm(r.shipments[0]?.id ?? ""));
     setUpdateTarget(r);
   };
 
   const submitUpdate = async () => {
     if (!updateTarget) return;
-    if (form.paymentType === "PI" && !form.invoiceId) {
-      toast.error("Invoice wajib dipilih untuk pembayaran PI");
+    if (form.paymentType === "FO" && !form.shipmentId) {
+      toast.error("Shipment (PO) wajib dipilih untuk pembayaran FO");
       return;
     }
     setSubmitting(true);
@@ -77,7 +78,7 @@ export const PaymentStatusTable: React.FC<{ rows: PaymentShipmentRow[]; logs: Pa
       const res = await fetch("/api/transaksi/payment-logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shipmentId: updateTarget.id, ...form }),
+        body: JSON.stringify({ invoiceId: updateTarget.id, ...form }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -111,31 +112,31 @@ export const PaymentStatusTable: React.FC<{ rows: PaymentShipmentRow[]; logs: Pa
     }
   };
 
-  const columns: FilterableColumn<PaymentShipmentRow>[] = [
-    { key: "shipmentName", header: "Shipment", cell: (r) => <span className="font-bold text-slate-800 dark:text-fg">{r.shipmentName}</span>, filterValue: (r) => r.shipmentName },
+  const columns: FilterableColumn<PaymentInvoiceRow>[] = [
+    { key: "invoice", header: "Invoice", cell: (r) => <span className="font-bold text-slate-800 dark:text-fg">{r.invoice}</span>, filterValue: (r) => r.invoice },
     {
-      key: "invoices",
-      header: "Bayar Supplier (PI) per Invoice",
+      key: "statusPI",
+      header: "Bayar Supplier (PI)",
+      cell: (r) => <Badge variant={STATUS_BADGE[r.statusPembayaranPI]}>{r.statusPembayaranPI}</Badge>,
+      filterOptions: toOptions(STATUS_PEMBAYARAN),
+      filterValue: (r) => r.statusPembayaranPI,
+    },
+    {
+      key: "shipments",
+      header: "Bayar Forwarder (FO) per Shipment",
       cell: (r) =>
-        r.invoices.length === 0 ? (
+        r.shipments.length === 0 ? (
           "-"
         ) : (
           <div className="flex flex-wrap gap-1.5">
-            {r.invoices.map((inv) => (
-              <Badge key={inv.id} variant={STATUS_BADGE[inv.statusPembayaranPI]}>
-                {inv.invoice || "(tanpa no)"}: {inv.statusPembayaranPI}
+            {r.shipments.map((s) => (
+              <Badge key={s.id} variant={STATUS_BADGE[s.statusPembayaranFO]}>
+                {s.po || s.shipmentName || "(tanpa no)"}: {s.statusPembayaranFO}
               </Badge>
             ))}
           </div>
         ),
-      filterValue: (r) => r.invoices.map((inv) => inv.invoice).join(" "),
-    },
-    {
-      key: "statusFO",
-      header: "Bayar Forwarder (FO)",
-      cell: (r) => <Badge variant={STATUS_BADGE[r.statusPembayaranFO]}>{r.statusPembayaranFO}</Badge>,
-      filterOptions: toOptions(STATUS_PEMBAYARAN),
-      filterValue: (r) => r.statusPembayaranFO,
+      filterValue: (r) => r.shipments.map((s) => s.po).join(" "),
     },
     {
       key: "actions",
@@ -155,10 +156,10 @@ export const PaymentStatusTable: React.FC<{ rows: PaymentShipmentRow[]; logs: Pa
         columns={columns}
         rows={rows}
         rowKey={(r) => r.id}
-        searchPlaceholder="Cari shipment, no invoice..."
+        searchPlaceholder="Cari no invoice..."
         renderExpandableRow={(r) => {
-          const myLogs = logs.filter((l) => l.shipmentId === r.id).sort((a, b) => b.changedAt.localeCompare(a.changedAt));
-          const invoiceLabel = (invoiceId: string | null) => r.invoices.find((inv) => inv.id === invoiceId)?.invoice ?? null;
+          const myLogs = logs.filter((l) => l.invoiceId === r.id).sort((a, b) => b.changedAt.localeCompare(a.changedAt));
+          const shipmentLabel = (shipmentId: string | null) => r.shipments.find((s) => s.id === shipmentId)?.po ?? null;
           return (
             <div className="space-y-2">
               <h4 className="text-sm font-bold text-slate-700 dark:text-fg-secondary">Histori Perubahan Status Pembayaran</h4>
@@ -171,7 +172,7 @@ export const PaymentStatusTable: React.FC<{ rows: PaymentShipmentRow[]; logs: Pa
                       <tr className="text-left text-xs font-bold text-slate-600 dark:text-fg-muted">
                         <th className="px-3 py-2">Tanggal</th>
                         <th className="px-3 py-2">Jenis</th>
-                        <th className="px-3 py-2">Invoice</th>
+                        <th className="px-3 py-2">PO</th>
                         <th className="px-3 py-2">Status</th>
                         <th className="px-3 py-2">Catatan</th>
                         <th className="px-3 py-2 w-10" />
@@ -182,7 +183,7 @@ export const PaymentStatusTable: React.FC<{ rows: PaymentShipmentRow[]; logs: Pa
                         <tr key={l.id} className="border-t border-slate-100 dark:border-line">
                           <td className="px-3 py-2">{l.changedAt}</td>
                           <td className="px-3 py-2">{PAYMENT_TYPE_LABEL[l.paymentType]}</td>
-                          <td className="px-3 py-2">{invoiceLabel(l.invoiceId) || "-"}</td>
+                          <td className="px-3 py-2">{shipmentLabel(l.shipmentId) || "-"}</td>
                           <td className="px-3 py-2">
                             <Badge variant={STATUS_BADGE[l.status]}>{l.status}</Badge>
                           </td>
@@ -212,14 +213,14 @@ export const PaymentStatusTable: React.FC<{ rows: PaymentShipmentRow[]; logs: Pa
       <Modal
         isOpen={updateTarget !== null}
         onClose={() => setUpdateTarget(null)}
-        title={`Update Status Pembayaran — ${updateTarget?.shipmentName ?? ""}`}
+        title={`Update Status Pembayaran — Invoice ${updateTarget?.invoice ?? ""}`}
         footer={
-          <div className="flex items-center justify-end gap-3 w-full">
-            <Button variant="ghost" onClick={() => setUpdateTarget(null)}>
-              Batal
-            </Button>
+          <div className="flex flex-row-reverse items-center justify-start gap-3 w-full">
             <Button variant="primary" isLoading={submitting} onClick={submitUpdate}>
               Simpan
+            </Button>
+            <Button variant="ghost" onClick={() => setUpdateTarget(null)}>
+              Batal
             </Button>
           </div>
         }
@@ -232,13 +233,13 @@ export const PaymentStatusTable: React.FC<{ rows: PaymentShipmentRow[]; logs: Pa
             onChange={(v) => setForm((f) => ({ ...f, paymentType: v as PaymentType }))}
             searchable={false}
           />
-          {form.paymentType === "PI" && (
+          {form.paymentType === "FO" && (
             <Select
-              label="Invoice"
-              options={(updateTarget?.invoices ?? []).map((inv) => ({ value: inv.id, label: inv.invoice || "(tanpa no)" }))}
-              value={form.invoiceId}
-              onChange={(v) => setForm((f) => ({ ...f, invoiceId: v }))}
-              placeholder="Pilih invoice"
+              label="Shipment (PO)"
+              options={(updateTarget?.shipments ?? []).map((s) => ({ value: s.id, label: s.po || s.shipmentName || "(tanpa no)" }))}
+              value={form.shipmentId}
+              onChange={(v) => setForm((f) => ({ ...f, shipmentId: v }))}
+              placeholder="Pilih shipment"
               searchable={false}
             />
           )}

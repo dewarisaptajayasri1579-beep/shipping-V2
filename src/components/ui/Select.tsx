@@ -3,6 +3,7 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, Plus, Search, SearchX } from "lucide-react";
+import { focusAdjacentField } from "@/lib/focus-nav";
 
 export interface SelectOption {
   value: string;
@@ -75,6 +76,10 @@ export const Select: React.FC<SelectProps> = ({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // Dipakai supaya trigger yang di-focus() programatik (lompat kolom via Enter, lihat
+  // focus-nav.ts) langsung buka dropdown-nya juga — .focus() doang gak mensimulasikan
+  // keydown, jadi tanpa ini user harus pencet panah dulu baru dropdown-nya kebuka.
+  const skipAutoOpenRef = useRef(false);
 
   const filterOptions = (opts: SelectOption[], q: string) => {
     if (!searchable || !q.trim()) return opts;
@@ -167,6 +172,18 @@ export const Select: React.FC<SelectProps> = ({
     if (opt.disabled) return;
     onChange?.(opt.value);
     setOpen(false);
+    // Pindah ke field berikutnya begitu opsi dipilih, biar alur keyboard nyambung terus
+    // tanpa perlu Tab manual. Ditunda 1 frame karena trigger perlu re-render dulu.
+    const trigger = triggerRef.current;
+    if (trigger) requestAnimationFrame(() => focusAdjacentField(trigger, 1));
+  };
+
+  const handleTriggerFocus = () => {
+    if (skipAutoOpenRef.current) {
+      skipAutoOpenRef.current = false;
+      return;
+    }
+    if (!open) openDropdown();
   };
 
   const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
@@ -181,6 +198,8 @@ export const Select: React.FC<SelectProps> = ({
     if (e.key === "Escape") {
       e.preventDefault();
       setOpen(false);
+      skipAutoOpenRef.current = true;
+      triggerRef.current?.focus();
       return;
     }
     if (e.key === "ArrowDown") {
@@ -242,6 +261,7 @@ export const Select: React.FC<SelectProps> = ({
             else openDropdown();
           }}
           onKeyDown={handleTriggerKeyDown}
+          onFocus={handleTriggerFocus}
           className={`w-full flex items-center ${sizeClasses[sizeVariant]} ${leftPadding} pr-10 bg-white/60 hover:bg-white/80 dark:bg-[var(--field-bg)] dark:hover:bg-[var(--field-bg)] border border-slate-200/80 dark:border-[rgba(148,163,184,0.14)] text-left transition-all duration-200 focus:outline-none focus:bg-white/95 dark:focus:bg-[var(--field-bg)] focus:border-blue-600 dark:focus:border-[#3B82F6] focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-0 dark:focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12),0_0_16px_rgba(59,130,246,0.08)] backdrop-blur-md dark:backdrop-blur-none shadow-[0_2px_6px_rgba(0,0,0,0.02)] dark:shadow-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
             open ? "bg-white/95 dark:bg-[var(--field-bg)] border-blue-600 ring-4 ring-blue-500/10" : ""
           } ${error ? "border-red-500 focus:ring-red-500/10 focus:border-red-500" : ""} ${className}`}
@@ -289,6 +309,7 @@ export const Select: React.FC<SelectProps> = ({
                   <input
                     ref={searchInputRef}
                     type="text"
+                    data-select-search
                     value={query}
                     onChange={(e) => handleQueryChange(e.target.value)}
                     onKeyDown={handleListKeyDown}

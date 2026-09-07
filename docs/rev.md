@@ -33,9 +33,9 @@ Tanggal dicatat: 2026-09-07
 - [x] 8 — "Gap ETD → ETA Gudang" ditampilkan per shipment di baris detail tabel Shipment
 - [x] 9 — Menu "Rekomendasi Vendor" dihapus dari sidebar, route & komponennya dihapus (formula scoring tetap dipakai di Laporan Scoring Vendor)
 - [ ] 10
-- [x] 11 — Data model diubah jadi Shipment (header) -> Invoice[] -> PO[] -> Item[], No Invoice/No PO/PIB gak diulang lagi per baris item
-- [x] 12 — Form Tambah/Kelola Shipment bisa upload scan PIB/Invoice/PO (disimpan lokal dulu, lihat poin 16)
+- [x] 11 — Data model final: Invoice (header, 1 Invoice bisa dikirim beberapa kali) -> Shipment[] (=PO, 1 PO = 1 kali kirim) -> Item[]. No Invoice/No PO/PIB gak diulang lagi per baris item. Nilai Billing invoice & Total tiap Shipment dihitung otomatis dari item di bawahnya, bukan input manual
+- [x] 12 — Form Tambah/Kelola Invoice bisa upload scan Invoice, PO, dan PIB (disimpan lokal dulu, lihat poin 16)
 - [x] 13 — Label "No Invoice/No PO/No PIB" jadi "Invoice/PO/PIB" (tanpa prefix "No") di seluruh UI
-- [x] 14 — Sudah bisa 1 Invoice banyak PO, 1 PO banyak Item lewat halaman detail shipment
+- [x] 14 — Sudah bisa 1 Invoice banyak kali kirim (banyak Shipment/PO), 1 Shipment/PO banyak Item lewat halaman detail invoice
 - [x] 15 — Tombol "Export Rekap Excel" ditambahkan langsung di halaman Input Shipment/Import (1 baris per item, CSV yang bisa dibuka di Excel)
 - [~] 16 — Upload dokumen sudah jalan, tapi disimpan lokal (public/uploads) karena belum ada credentials Google Drive — tinggal ganti isi /api/upload kalau credentials sudah siap

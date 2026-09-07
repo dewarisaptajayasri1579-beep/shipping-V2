@@ -33,7 +33,19 @@ export function invoiceTotalValue(inv: Pick<InvoiceWithShipmentsLike, "shipments
   return inv.shipments.reduce((sum, s) => sum + shipmentTotalValue(s), 0)
 }
 
+/** Ratakan Invoice[] -> 1 baris per Shipment (PO), dengan info invoice induknya ikut
+ *  ditempel — dipakai EWS buat rule yang jalan per-shipment (ETA mendekat, PIB belum
+ *  lengkap, shipment macet, dst) tanpa perlu nested loop di tiap rule. */
+export function flattenShipments<S extends ShipmentLike>(
+  invoices: Array<{ id: string; invoice: string; statusPembayaranPI: string; shipments: S[] }>
+): (S & { invoiceId: string; invoice: string; statusPembayaranPI: string })[] {
+  return invoices.flatMap((inv) =>
+    inv.shipments.map((s) => ({ ...s, invoiceId: inv.id, invoice: inv.invoice, statusPembayaranPI: inv.statusPembayaranPI }))
+  )
+}
+
 export interface FlatShipmentItem {
+  id: string
   invoiceId: string
   invoice: string
   shipmentId: string
@@ -49,6 +61,7 @@ export function flattenInvoiceItems(invoices: InvoiceWithShipmentsLike[]): FlatS
   return invoices.flatMap((inv) =>
     inv.shipments.flatMap((s) =>
       s.items.map((it) => ({
+        id: it.id,
         invoiceId: inv.id,
         invoice: inv.invoice,
         shipmentId: s.id,

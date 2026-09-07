@@ -30,13 +30,6 @@ export const EWS_RULES: EwsRuleDef[] = [
     params: { percentThreshold: { label: "Ambang persen dari rata-rata vendor", default: 80, suffix: "%" } },
   },
   {
-    id: "jatuh-tempo-pembayaran",
-    category: "keterlambatan",
-    label: "Jatuh tempo pembayaran mendekat",
-    description: "H-7, H-3, H-1 sebelum tanggal jatuh tempo pembayaran ke supplier/forwarder, eskalasi ke atasan kalau lewat H+0 belum dibayar.",
-    params: { hMinus: { label: "Kirim mulai H-", default: 7, suffix: "hari" } },
-  },
-  {
     id: "pib-belum-lengkap",
     category: "keterlambatan",
     label: "Dokumen PIB belum lengkap menjelang kedatangan",
@@ -70,13 +63,6 @@ export const EWS_RULES: EwsRuleDef[] = [
     label: "Kenaikan rate forwarder tidak wajar",
     description: "Rate forwarder (kombinasi charge/kontainer/incoterm) naik signifikan dibanding entri histori sebelumnya.",
     params: { percentThreshold: { label: "Ambang kenaikan rate", default: 15, suffix: "%" } },
-  },
-  {
-    id: "bayar-sebelum-datang",
-    category: "fraud",
-    label: "Pembayaran tercatat lunas sebelum barang tercatat datang",
-    description: "Status Pembayaran PI/FO = Sudah Dibayar padahal Status Barang belum Barang Sudah Datang — urutan proses terbalik.",
-    params: {},
   },
   {
     id: "perubahan-setelah-done",

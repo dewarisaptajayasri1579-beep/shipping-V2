@@ -1,12 +1,12 @@
 import { AppLayout } from "@/components/layout/AppLayout"
 import { Card, Breadcrumb } from "@/components/ui"
 import { getCurrentUser } from "@/lib/current-user"
-import { shipmentStore, paymentLogStore } from "@/lib/data/transaksi"
+import { invoiceStore, paymentLogStore } from "@/lib/data/transaksi"
 import { PaymentStatusTable } from "@/components/transaksi/PaymentStatusTable"
 
 export default async function StatusPembayaranPage() {
   const user = await getCurrentUser()
-  const shipments = shipmentStore.getAll()
+  const invoices = invoiceStore.getAll()
   const logs = paymentLogStore.getAll()
 
   return (
@@ -22,11 +22,11 @@ export default async function StatusPembayaranPage() {
 
         <Card variant="panel" padding="lg">
           <PaymentStatusTable
-            rows={shipments.map((s) => ({
-              id: s.id,
-              shipmentName: s.shipmentName,
-              invoices: s.invoices.map((inv) => ({ id: inv.id, invoice: inv.invoice, statusPembayaranPI: inv.statusPembayaranPI })),
-              statusPembayaranFO: s.statusPembayaranFO,
+            rows={invoices.map((inv) => ({
+              id: inv.id,
+              invoice: inv.invoice,
+              statusPembayaranPI: inv.statusPembayaranPI,
+              shipments: inv.shipments.map((s) => ({ id: s.id, shipmentName: s.shipmentName, po: s.po, statusPembayaranFO: s.statusPembayaranFO })),
             }))}
             logs={logs}
           />

@@ -2,13 +2,13 @@ import { AppLayout } from "@/components/layout/AppLayout"
 import { Card, Breadcrumb, Badge, Table, TableContainer, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui"
 import { getCurrentUser } from "@/lib/current-user"
 import { supplierStore, forwarderStore } from "@/lib/data/master"
-import { shipmentDtdStore, shipmentStore } from "@/lib/data/transaksi"
+import { shipmentDtdStore, invoiceStore } from "@/lib/data/transaksi"
 import { calcGapDays } from "@/lib/gap"
 
 export default async function LaporanPerformaVendorPage() {
   const user = await getCurrentUser()
   const shipmentsDtd = shipmentDtdStore.getAll()
-  const shipments = shipmentStore.getAll()
+  const shipments = invoiceStore.getAll().flatMap((inv) => inv.shipments)
   const suppliers = supplierStore.getAll()
   const forwarders = forwarderStore.getAll()
 

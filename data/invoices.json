@@ -1,0 +1,312 @@
+[
+  {
+    "id": "f5ed797b-143a-452b-bdc7-99ed2f893f7b",
+    "createdAt": "2026-01-08T00:00:00.000Z",
+    "updatedAt": "2026-01-08T00:00:00.000Z",
+    "invoice": "INV279547051",
+    "brandId": "brand-fluke",
+    "countryId": "country-singapore",
+    "documentUrl": null,
+    "statusPembayaranPI": "SUDAH DIBAYAR",
+    "dueDatePI": null,
+    "shipments": [
+      {
+        "id": "9401117f-2a90-4879-9659-10ce3cfbe24e",
+        "createdAt": "2026-01-08T00:00:00.000Z",
+        "updatedAt": "2026-01-08T00:00:00.000Z",
+        "shipmentName": "INV279547051, 278972657-660 - SINGAPORE - AIR - FEDEX",
+        "po": "FLU052/25",
+        "documentUrl": null,
+        "pib": "",
+        "pibDocumentUrl": null,
+        "airSea": "AIR",
+        "warehouseId": "gudang-yasunlitex",
+        "statusBarang": "BARANG SUDAH DATANG",
+        "tanggalPickup": null,
+        "etd": null,
+        "eta": "2026-01-08",
+        "etaGudang": null,
+        "forwarderId": "forwarder-fedex",
+        "statusPembayaranFO": "BELUM DIBAYAR",
+        "nilaiForwarder": 0,
+        "dueDateFO": "2026-08-19",
+        "statusShipment": "PENDING PEMBAYARAN FW",
+        "items": [
+          {
+            "id": "b1cd9ede-f274-46d7-b6b1-e8e21a07562c",
+            "createdAt": "2026-01-08T00:00:00.000Z",
+            "updatedAt": "2026-01-08T00:00:00.000Z",
+            "itemId": "item-4367834",
+            "qty": 750,
+            "priceSatuan": 23.46
+          },
+          {
+            "id": "7a4422ee-1903-4ffd-bbd0-7f9535671dcc",
+            "createdAt": "2026-01-08T00:00:00.000Z",
+            "updatedAt": "2026-01-08T00:00:00.000Z",
+            "itemId": "item-5294277",
+            "qty": 120,
+            "priceSatuan": 38.4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "966bf15d-03b1-4ece-abca-06426a224bc1",
+    "createdAt": "2026-02-27T00:00:00.000Z",
+    "updatedAt": "2026-02-27T00:00:00.000Z",
+    "invoice": "INV296266683",
+    "brandId": "brand-fluke",
+    "countryId": "country-singapore",
+    "documentUrl": null,
+    "statusPembayaranPI": "SUDAH DIBAYAR",
+    "dueDatePI": null,
+    "shipments": [
+      {
+        "id": "2db8ce36-c409-41f3-a505-ef626ec7f46a",
+        "createdAt": "2026-02-27T00:00:00.000Z",
+        "updatedAt": "2026-02-27T00:00:00.000Z",
+        "shipmentName": "INV296884624, 296266683, 296266567 - SEA - SINGAPORE - RICAKUSUMA",
+        "po": "FLU052/25",
+        "documentUrl": null,
+        "pib": "28146",
+        "pibDocumentUrl": null,
+        "airSea": "SEA",
+        "warehouseId": "gudang-yasunlitex",
+        "statusBarang": "BARANG SUDAH DATANG",
+        "tanggalPickup": null,
+        "etd": null,
+        "eta": "2026-02-27",
+        "etaGudang": null,
+        "forwarderId": "forwarder-rica",
+        "statusPembayaranFO": "BELUM DIBAYAR",
+        "nilaiForwarder": 0,
+        "dueDateFO": "2026-08-17",
+        "statusShipment": "PENDING PEMBAYARAN FW",
+        "items": [
+          {
+            "id": "98b0744e-c922-4eb0-af59-a2586fe65bf9",
+            "createdAt": "2026-02-27T00:00:00.000Z",
+            "updatedAt": "2026-02-27T00:00:00.000Z",
+            "itemId": "item-5294245",
+            "qty": 185,
+            "priceSatuan": 80.3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "59777594-1487-4bda-bffd-0c49b1efd206",
+    "createdAt": "2025-11-21T00:00:00.000Z",
+    "updatedAt": "2025-11-21T00:00:00.000Z",
+    "invoice": "INV142531067",
+    "brandId": "brand-socomec",
+    "countryId": "country-france",
+    "documentUrl": null,
+    "statusPembayaranPI": "SUDAH DIBAYAR",
+    "dueDatePI": null,
+    "shipments": [
+      {
+        "id": "08588a9e-2243-4eed-84ca-4a4094ee85fb",
+        "createdAt": "2025-11-21T00:00:00.000Z",
+        "updatedAt": "2025-11-21T00:00:00.000Z",
+        "shipmentName": "INV142531067 - FRANCE - AIR - RICAKUSUMA",
+        "po": "SOC022/25-R1",
+        "documentUrl": null,
+        "pib": "27266",
+        "pibDocumentUrl": null,
+        "airSea": "AIR",
+        "warehouseId": "gudang-yasunlitex",
+        "statusBarang": "BARANG SUDAH DATANG",
+        "tanggalPickup": null,
+        "etd": null,
+        "eta": "2025-11-21",
+        "etaGudang": null,
+        "forwarderId": "forwarder-rica",
+        "statusPembayaranFO": "BELUM DIBAYAR",
+        "nilaiForwarder": 7857212,
+        "dueDateFO": "2026-08-14",
+        "statusShipment": "PENDING PEMBAYARAN FW",
+        "items": [
+          {
+            "id": "68d18f65-e559-4b18-8823-16915126f6a7",
+            "createdAt": "2025-11-21T00:00:00.000Z",
+            "updatedAt": "2025-11-21T00:00:00.000Z",
+            "itemId": "item-48260100",
+            "qty": 16,
+            "priceSatuan": 2200
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "78c86290-18d8-4a3d-8ad7-cf71abff055d",
+    "createdAt": "2025-12-03T00:00:00.000Z",
+    "updatedAt": "2025-12-03T00:00:00.000Z",
+    "invoice": "INV142530885",
+    "brandId": "brand-socomec",
+    "countryId": "country-france",
+    "documentUrl": null,
+    "statusPembayaranPI": "SUDAH DIBAYAR",
+    "dueDatePI": null,
+    "shipments": [
+      {
+        "id": "a162736f-403b-4d13-9884-a5ad3a346785",
+        "createdAt": "2025-12-03T00:00:00.000Z",
+        "updatedAt": "2025-12-03T00:00:00.000Z",
+        "shipmentName": "INV142530885 - SEA - RICAKUSUMA - FRANCE",
+        "po": "SOC018/25",
+        "documentUrl": null,
+        "pib": "27086",
+        "pibDocumentUrl": null,
+        "airSea": "SEA",
+        "warehouseId": "gudang-yasunlitex",
+        "statusBarang": "BARANG SUDAH DATANG",
+        "tanggalPickup": null,
+        "etd": null,
+        "eta": "2025-12-03",
+        "etaGudang": null,
+        "forwarderId": "forwarder-rica",
+        "statusPembayaranFO": "BELUM DIBAYAR",
+        "nilaiForwarder": 14506508,
+        "dueDateFO": "2026-09-01",
+        "statusShipment": "PENDING PEMBAYARAN FW",
+        "items": [
+          {
+            "id": "c7d1fcc2-fa81-4d2b-bce2-601ab194dbb5",
+            "createdAt": "2025-12-03T00:00:00.000Z",
+            "updatedAt": "2025-12-03T00:00:00.000Z",
+            "itemId": "item-47081010",
+            "qty": 25,
+            "priceSatuan": 1439.32
+          },
+          {
+            "id": "a0a79f81-8f08-4a2c-b722-2abf541aa4fd",
+            "createdAt": "2025-12-03T00:00:00.000Z",
+            "updatedAt": "2025-12-03T00:00:00.000Z",
+            "itemId": "item-47081063",
+            "qty": 14,
+            "priceSatuan": 1916.25
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "41745da8-c1fe-4f2d-8703-4de9fd010907",
+    "createdAt": "2026-08-01T00:00:00.000Z",
+    "updatedAt": "2026-08-01T00:00:00.000Z",
+    "invoice": "INV279988001",
+    "brandId": "brand-fluke",
+    "countryId": "country-singapore",
+    "documentUrl": null,
+    "statusPembayaranPI": "SUDAH DIBAYAR",
+    "dueDatePI": null,
+    "shipments": [
+      {
+        "id": "44b5df17-48af-476e-acb9-99d705d9268c",
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "updatedAt": "2026-08-01T00:00:00.000Z",
+        "shipmentName": "INV279988001 - SINGAPORE - AIR - FEDEX",
+        "po": "FLU060/26",
+        "documentUrl": null,
+        "pib": "",
+        "pibDocumentUrl": null,
+        "airSea": "AIR",
+        "warehouseId": "gudang-yasunlitex",
+        "statusBarang": "BELUM DATANG",
+        "tanggalPickup": null,
+        "etd": null,
+        "eta": "2026-08-18",
+        "etaGudang": null,
+        "forwarderId": "forwarder-fedex",
+        "statusPembayaranFO": "BELUM DIBAYAR",
+        "nilaiForwarder": 0,
+        "dueDateFO": null,
+        "statusShipment": "ON GOING",
+        "items": [
+          {
+            "id": "032da074-0a06-4fc1-89ff-c118bf8c925e",
+            "createdAt": "2026-08-01T00:00:00.000Z",
+            "updatedAt": "2026-08-01T00:00:00.000Z",
+            "itemId": "item-5294245",
+            "qty": 50,
+            "priceSatuan": 95
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "fae7dbb8-ffd4-4ce8-97dc-78fc1937f52a",
+    "createdAt": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-09-07T09:40:03.026Z",
+    "invoice": "INV142531200",
+    "brandId": "brand-socomec",
+    "countryId": "country-france",
+    "documentUrl": null,
+    "statusPembayaranPI": "SUDAH DIBAYAR",
+    "dueDatePI": "2026-08-13",
+    "shipments": [
+      {
+        "id": "88c7d70f-7b7d-4007-869d-87609dd27064",
+        "createdAt": "2026-07-15T00:00:00.000Z",
+        "updatedAt": "2026-07-15T00:00:00.000Z",
+        "shipmentName": "INV142531200 - FRANCE - SEA - RICAKUSUMA",
+        "po": "SOC030/26",
+        "documentUrl": null,
+        "pib": "27500",
+        "pibDocumentUrl": null,
+        "airSea": "SEA",
+        "warehouseId": "gudang-yasunlitex",
+        "statusBarang": "ON GOING",
+        "tanggalPickup": null,
+        "etd": null,
+        "eta": "2026-08-10",
+        "etaGudang": null,
+        "forwarderId": "forwarder-rica",
+        "statusPembayaranFO": "BELUM DIBAYAR",
+        "nilaiForwarder": 0,
+        "dueDateFO": null,
+        "statusShipment": "ON GOING",
+        "items": [
+          {
+            "id": "03fc9d2f-a76e-43dc-8288-6ef48fcb61c6",
+            "createdAt": "2026-07-15T00:00:00.000Z",
+            "updatedAt": "2026-07-15T00:00:00.000Z",
+            "itemId": "item-47081010",
+            "qty": 10,
+            "priceSatuan": 1500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "c5c0df00-d1e7-49b6-9313-f31f2c02bd4b",
+    "createdAt": "2026-09-07T08:02:10.621Z",
+    "updatedAt": "2026-09-07T09:40:06.929Z",
+    "invoice": "122",
+    "brandId": "brand-fluke",
+    "countryId": "country-france",
+    "documentUrl": null,
+    "statusPembayaranPI": "SUDAH DIBAYAR",
+    "dueDatePI": null,
+    "shipments": []
+  },
+  {
+    "invoice": "INV 001",
+    "brandId": "brand-allway",
+    "countryId": "country-singapore",
+    "documentUrl": null,
+    "statusPembayaranPI": "BELUM DIBAYAR",
+    "dueDatePI": null,
+    "shipments": [],
+    "id": "fcb69663-fa92-44dc-a449-47943ff5d47d",
+    "createdAt": "2026-09-07T10:02:10.602Z",
+    "updatedAt": "2026-09-07T10:02:10.602Z"
+  }
+]

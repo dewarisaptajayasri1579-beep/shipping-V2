@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import { focusAdjacentField, focusFirstField } from "@/lib/focus-nav";
 
 export interface ModalProps {
   isOpen: boolean;
@@ -24,25 +25,49 @@ export const Modal: React.FC<ModalProps> = ({
   size = "md",
   closeOnBackdropClick = true,
 }) => {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  // Efek terpisah dari listener Escape di bawah, dan sengaja cuma depend ke `isOpen` —
+  // bukan `onClose` juga — supaya CUMA jalan saat modal beneran baru kebuka, bukan tiap
+  // parent re-render (mis. tiap ketikan di form manggil setState, yang bikin `onClose`
+  // jadi closure baru tiap render kalau dia ikut jadi dependency; efek ini jadi re-run
+  // tiap keystroke dan focusFirstField() nge-select ulang teks yang lagi diketik).
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleKeyDown);
-    }
-
+    if (!isOpen) return;
+    document.body.style.overflow = "hidden";
+    // Fokus field pertama begitu modal kebuka, biar bisa langsung ngetik tanpa klik.
+    // Discope ke body content (bukan seluruh panel) supaya gak kepentok tombol close (X).
+    requestAnimationFrame(() => {
+      if (bodyRef.current) focusFirstField(bodyRef.current);
+    });
     return () => {
       document.body.style.overflow = "unset";
-      window.removeEventListener("keydown", handleKeyDown);
     };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  // Enter di input teks biasa = pindah ke field berikutnya (kayak Tab), bukan diam.
+  // Textarea (butuh newline), tombol (biar klik/buka-dropdown native jalan), dan search
+  // box di dalam Select (Select ngurus advance-nya sendiri) sengaja gak disentuh di sini.
+  const handleEnterAdvance = (e: React.KeyboardEvent) => {
+    if (e.key !== "Enter") return;
+    const target = e.target as HTMLElement;
+    if (target.hasAttribute("data-select-search")) return;
+    if (!(target instanceof HTMLInputElement)) return;
+    e.preventDefault();
+    focusAdjacentField(target, 1);
+  };
 
   const sizeClasses = {
     sm: "max-w-md",
@@ -62,6 +87,9 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Card */}
       <div
+        ref={panelRef}
+        data-modal-panel
+        onKeyDown={handleEnterAdvance}
         className={`relative w-full ${sizeClasses[size]} glass-modal p-6 sm:p-8 rounded-[32px] shadow-2xl z-10 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]`}
       >
         {/* Header */}
@@ -90,7 +118,9 @@ export const Modal: React.FC<ModalProps> = ({
         )}
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto pr-1">{children}</div>
+        <div ref={bodyRef} className="flex-1 overflow-y-auto pr-1">
+          {children}
+        </div>
 
         {/* Footer */}
         {footer && (

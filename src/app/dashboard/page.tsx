@@ -2,15 +2,16 @@ import { AppLayout } from "@/components/layout/AppLayout"
 import { Breadcrumb } from "@/components/ui"
 import { getCurrentUser } from "@/lib/current-user"
 import { brandStore, countryStore } from "@/lib/data/master"
-import { shipmentStore } from "@/lib/data/transaksi"
-import { shipmentTotalBilling } from "@/lib/shipment-helpers"
+import { invoiceStore } from "@/lib/data/transaksi"
+import { flattenShipments, shipmentTotalValue } from "@/lib/shipment-helpers"
 import { DashboardView } from "@/components/dashboard/DashboardView"
 
 export default async function DashboardPage() {
   const user = await getCurrentUser()
-  const shipments = shipmentStore.getAll()
+  const invoices = invoiceStore.getAll()
   const brands = brandStore.getAll()
   const countries = countryStore.getAll()
+  const invoiceById = Object.fromEntries(invoices.map((inv) => [inv.id, inv]))
 
   return (
     <AppLayout userName={user.name} userRole={user.role}>
@@ -22,15 +23,15 @@ export default async function DashboardPage() {
         </div>
 
         <DashboardView
-          shipments={shipments.map((s) => ({
+          shipments={flattenShipments(invoices).map((s) => ({
             id: s.id,
             shipmentName: s.shipmentName,
-            brandId: s.brandId,
-            countryId: s.countryId,
+            brandId: invoiceById[s.invoiceId]?.brandId ?? null,
+            countryId: invoiceById[s.invoiceId]?.countryId ?? null,
             airSea: s.airSea,
             statusBarang: s.statusBarang,
             eta: s.eta,
-            nilaiBilling: shipmentTotalBilling(s),
+            nilaiBilling: shipmentTotalValue(s),
             nilaiForwarder: s.nilaiForwarder,
             statusShipment: s.statusShipment,
           }))}

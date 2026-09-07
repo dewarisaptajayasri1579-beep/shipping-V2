@@ -1,7 +1,7 @@
 [
   {
     "id": "log-1",
-    "shipmentId": "shp-1",
+    "shipmentId": null,
     "paymentType": "PI",
     "status": "SUDAH DIBAYAR",
     "note": "Pembayaran ke FLUKE via TT",
@@ -12,13 +12,35 @@
   },
   {
     "id": "log-2",
-    "shipmentId": "shp-6",
+    "shipmentId": "a162736f-403b-4d13-9884-a5ad3a346785",
     "paymentType": "FO",
     "status": "SUDAH DIBAYAR",
     "note": "Dokumen sudah lunas di finance",
     "changedAt": "2025-12-10",
     "createdAt": "2025-12-10T00:00:00.000Z",
     "updatedAt": "2025-12-10T00:00:00.000Z",
-    "invoiceId": null
+    "invoiceId": "78c86290-18d8-4a3d-8ad7-cf71abff055d"
+  },
+  {
+    "invoiceId": "fae7dbb8-ffd4-4ce8-97dc-78fc1937f52a",
+    "shipmentId": null,
+    "paymentType": "PI",
+    "status": "SUDAH DIBAYAR",
+    "note": null,
+    "changedAt": "2026-09-07",
+    "id": "dd3037bb-d266-472b-b580-45cde22be27a",
+    "createdAt": "2026-09-07T09:40:03.024Z",
+    "updatedAt": "2026-09-07T09:40:03.024Z"
+  },
+  {
+    "invoiceId": "c5c0df00-d1e7-49b6-9313-f31f2c02bd4b",
+    "shipmentId": null,
+    "paymentType": "PI",
+    "status": "SUDAH DIBAYAR",
+    "note": null,
+    "changedAt": "2026-09-07",
+    "id": "937a3e78-4b20-4546-a8b8-c8c7f151f355",
+    "createdAt": "2026-09-07T09:40:06.928Z",
+    "updatedAt": "2026-09-07T09:40:06.928Z"
   }
 ]
