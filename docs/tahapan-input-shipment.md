@@ -29,6 +29,67 @@ tiap fase bisa dipakai (usable) sendiri — bukan nunggu semua fase selesai baru
 
 ---
 
+## Timeline / Urutan Eksekusi
+
+Urutan di bawah ini **wajib** (bukan cuma nomor fase) — tiap baris butuh baris sebelumnya
+yang jadi prasyaratnya selesai duluan, soalnya struktur datanya bertumpuk (PO → Invoice →
+Shipment → Customs/Receiving/Finance → KPI turunan → Report).
+
+| # | Pekerjaan | Fase | Prasyarat |
+|---|---|---|---|
+| 1 | Master Item & Supplier — field tambahan | 0 | — |
+| 2 | Purchase Order (data model + halaman) | 1.1 | #1 |
+| 3 | Supplier Invoice (pilih dari PO) | 1.2 | #2 |
+| 4 | Shipment (dari Invoice, bisa gabung >1 Invoice) | 1.3 | #3 |
+| 5 | Outstanding Engine (PO/Invoice/Shipment) | 1.4 | #2–4 |
+| 6 | Migrasi data lama (`invoices.json` sekarang) ke PO/Invoice/Shipment baru | 1 | #2–5 |
+| 7 | Milestone tanggal planned/actual (Pickup, ATD, ATA, dst) | 2.1 | #4 |
+| 8 | Status Shipment/Barang otomatis dari milestone | 2.2 | #7 |
+| 9 | Warehouse Receiving (entitas + Qty Received/discrepancy) | 2.3 | #4 |
+| 10 | KPI Arrival-to-Warehouse Gap | 2.4 | #7, #9 |
+| 11 | Customs/PIB (entitas + Customs Release Date) | 3.1 | #4, #7 |
+| 12 | Forwarder Finance (entitas terpisah) | 3.2 | #4 |
+| 13 | Reminder Engine + EWS rewrite (severity 4 level) | 4 | #7–12 |
+| 14 | Dashboard baru (KPI cards, Need Attention, Timeline Overview) | 4 | #10, #13 |
+| 15 | Reports (Shipment Summary, Lead Time x2, Outstanding, Payment, Forwarder Performance) | 5 | #2–14 |
+| 16 | Hardening — Audit Trail, Attachment per tahap, migration script resmi, permission, export | 6 | bisa mulai paralel, tapi diselesaikan terakhir |
+
+Praktiknya: **#1–6 (Fase 0 & 1) itu 1 paket kerja besar** yang harus selesai duluan sebelum
+apa pun lainnya bisa jalan — ini yang direkomendasikan jadi target eksekusi berikutnya.
+
+---
+
+## Standar UX Input — wajib dipakai di SEMUA form baru
+
+Setiap form baru yang dibangun di fase manapun (Tambah PO, Tambah Invoice, Tambah Shipment,
+Update Milestone, Input Customs, Input Receiving, dst) **wajib** ikut pola keyboard-first
+yang sudah dibangun & terbukti jalan di form Invoice sekarang — jangan bikin form baru yang
+cuma bisa diisi pakai mouse.
+
+Infra-nya sudah ada, reuse langsung (jangan bikin ulang):
+
+- **`src/components/ui/Modal.tsx`** — begitu modal kebuka, field pertama otomatis fokus
+  (`focusFirstField`, discope ke body content biar gak kepentok tombol close/X).
+- **`src/lib/focus-nav.ts`** — `focusAdjacentField()`: Enter di kolom teks = pindah ke field
+  berikutnya (kayak Tab), bukan diam/nyoba submit. `Tab` / `Shift+Tab` native browser tetap
+  jalan sendiri asal urutan DOM field-nya sudah bener.
+- **`src/components/ui/Select.tsx`** — dropdown otomatis kebuka begitu field dapat fokus
+  (`onFocus` → `openDropdown()`), box pencarian langsung bisa diketik, **Panah Atas/Bawah**
+  pilih opsi, **Enter** = pilih opsi **dan** otomatis lompat ke field berikutnya, **Escape**
+  nutup dropdown & fokus balik ke kotaknya.
+- **Urutan tombol footer modal**: tombol **Simpan** ditulis lebih dulu di DOM (baru
+  `flex-row-reverse` biar visualnya tetap "Batal" kiri "Simpan" kanan) — supaya Enter dari
+  field terakhir langsung nyampe ke Simpan, bukan mampir ke Batal dulu. Lihat contoh di
+  `InvoiceTable.tsx` / `ShipmentDetailView.tsx` footer modal-nya.
+
+Checklist tiap bikin form/modal baru:
+- [ ] Field pertama auto-focus saat modal dibuka (otomatis, gratis, dari `Modal.tsx`).
+- [ ] Semua field pakai komponen `Input`/`Select`/`CurrencyInput`/`DatePicker` dari `components/ui` (bukan `<input>` mentah) — biar otomatis dapat behavior di atas.
+- [ ] Footer modal: `Simpan` ditulis duluan di JSX + `flex-row-reverse`, `Batal` belakangan.
+- [ ] Kalau ada field yang genuinely "isi belakangan" (kayak field lanjutan di Edit Header Invoice), tetap taruh di urutan Tab yang logis, jangan disisipkan di tengah alur field-field awal.
+
+---
+
 ## Fase 0 — Persiapan Master Data
 
 Sebelum PO bisa dibuat, master data yang jadi rujukannya harus lengkap dulu.
@@ -46,66 +107,70 @@ File: `src/lib/data/master.ts`, halaman-halaman di `src/app/master/*`.
 Ini fase paling besar — restrukturisasi total dari model `Invoice → Shipment → Item` yang
 ada sekarang.
 
-### 1.1 Purchase Order (entitas baru)
-- [ ] Data model `PurchaseOrder` (header: No PO, Tanggal PO, Supplier, Brand, Country, Currency, Catatan, Status otomatis) + `PurchaseOrderItem[]` (Item, Qty Order, Unit Price, Total — auto).
-- [ ] Status PO otomatis: DRAFT / OPEN / PARTIALLY INVOICED / FULLY INVOICED / PARTIALLY SHIPPED / FULLY SHIPPED / PARTIALLY RECEIVED / COMPLETED / CANCELLED — dihitung dari qty outstanding di level bawahnya (butuh Invoice & Shipment jalan dulu, jadi status penuh baru akurat setelah 1.2–1.3 selesai).
-- [ ] Halaman list + detail PO (ringkasan Ordered/Invoiced/Shipped/Received Qty & Outstanding).
-- [ ] API `POST/PATCH/DELETE /api/purchase/orders`.
+### 1.1 Purchase Order (entitas baru) — SELESAI, di Postgres
+- [x] Data model `PurchaseOrder` + `PurchaseOrderItem[]` — tabel `purchase_orders`/`purchase_order_items` di Postgres (`prisma/schema.prisma`), bukan JSON.
+- [x] Status PO otomatis: DRAFT / OPEN / PARTIALLY INVOICED / FULLY INVOICED (`computePoStatus` di `src/lib/data/purchase.ts`). PARTIALLY/FULLY SHIPPED, PARTIALLY RECEIVED, COMPLETED, CANCELLED belum — nyusul pas Shipment & Receiving jalan.
+- [x] Halaman list PO (`/purchase/orders`, `PurchaseOrderTable.tsx`) dengan expand lihat item & total. Detail page terpisah belum dibuat (masih cukup lewat expand row).
+- [x] API `POST/PATCH/DELETE /api/purchase/orders`.
 
-### 1.2 Supplier Invoice (rombak dari "Invoice" yang sekarang)
-- [ ] Cara input: pilih PO dulu → sistem tampilkan PO Item yang masih outstanding → user isi Qty Invoice Sekarang per item (bukan ketik ulang item/qty dari nol).
-- [ ] Data model `SupplierInvoice` (header: No Invoice, Invoice Date, Supplier, ref PO, Country, Currency, attachment) + `InvoiceItem[]` (ref PO Item, Qty PO, Qty Already Invoiced, Qty Invoice Sekarang, Remaining Qty, Unit Price, Total — auto).
-- [ ] Validasi: Qty Invoice ≤ sisa Qty PO (kecuali override + alasan); No Invoice duplikat untuk supplier sama → warning.
-- [ ] Status Invoice otomatis: DRAFT / READY TO SHIP / PARTIALLY SHIPPED / FULLY SHIPPED / CANCELLED.
+### 1.2 Supplier Invoice (rombak dari "Invoice" yang sekarang) — SELESAI, di Postgres
+- [x] Cara input: pilih PO dulu → sistem tampilkan PO Item + sisa qty → user isi Qty Invoice Sekarang per item.
+- [x] Data model `SupplierInvoice` + `InvoiceItem[]` di Postgres.
+- [x] Validasi: Qty Invoice ≤ sisa Qty PO (`validateInvoiceQty`, sudah dites — over-invoice ditolak 400). Override + alasan & warning duplikat No Invoice belum dibuat.
+- [x] Status Invoice otomatis: DRAFT / READY TO SHIP / PARTIALLY SHIPPED / FULLY SHIPPED (`computeInvoiceStatus`). CANCELLED belum.
 
-### 1.3 Shipment (rombak dari "Shipment(=PO)" yang sekarang)
-- [ ] Cara input: dari halaman Invoice → tombol "Create Shipment" (pilih Invoice/Invoice Item, bisa gabung dari beberapa Invoice sekaligus), atau dari menu Shipment langsung.
-- [ ] Data model `Shipment` (header: Shipment No otomatis `SHP-2026-00125`, Shipment Date, Origin Country, Mode AIR/SEA, Forwarder, Destination Warehouse, Origin/Destination Port opsional, Planned Pickup, ETD, ETA, Catatan) + `ShipmentItem[]` (ref Invoice Item + PO Item, Invoice Qty Available, Qty Shipped).
-- [ ] Validasi: Qty Shipped ≤ Qty Invoice yang masih tersedia.
-- [ ] Draft Shipment: shipment sudah direncanakan tapi Invoice final belum lengkap — tetap simpan normal flow PO → Invoice → Shipment sebagai jalur utama.
+### 1.3 Shipment (rombak dari "Shipment(=PO)" yang sekarang) — SELESAI, di Postgres
+- [x] Cara input: menu Shipment → "Tambah Shipment" → pilih item dari Invoice manapun (tabel gabungan semua Invoice, bisa multi-select lintas invoice) + isi header dasar.
+- [x] Data model `Shipment` (Shipment No auto `SHP-2026-00001` — sudah dites, increment per tahun) + `ShipmentItem[]` (ref Invoice Item, Qty Shipped, Qty Received). Origin/Destination Port, Planned Pickup, ETD, ETA sudah ada; milestone aktual (ATD/ATA/Customs Release/Warehouse Receipt) juga sudah ada di form Edit (bagian "Progress/Milestone Aktual") — jadi Fase 1.3 & sebagian Fase 2.1/2.2 (status otomatis) sekalian kebangun barengan.
+- [x] Validasi: Qty Shipped ≤ Qty Invoice yang masih tersedia (`validateShipmentQty`, sudah dites — over-ship ditolak 400).
+- [x] Field `isDraft` (Switch di form) — belum ada halaman/filter "Draft Shipments" terpisah, tapi datanya sudah bisa ditandai.
 
-### 1.4 Outstanding Engine
-- [ ] Fungsi hitung otomatis (mirip `shipment-helpers.ts` sekarang, diperluas): Outstanding Invoice Qty (PO), Outstanding Shipment Qty (Invoice), Outstanding Receiving Qty (Shipment) — dipakai di detail PO/Invoice/Shipment dan di Laporan Outstanding (Fase 5).
+### 1.4 Outstanding Engine — SELESAI (versi dasar)
+- [x] `invoicedQtyByPoItem`, `shippedQtyByInvoiceItem` di `src/lib/data/purchase.ts` — dipakai buat validasi qty & hitung status otomatis. Belum ada tampilan "Outstanding Qty" eksplisit di kolom tabel PO/Invoice (baru dipakai internal buat validasi & status) — nyusul di Laporan Outstanding (Fase 5) kalau dibutuhkan tampilan drill-down.
 
-**Migrasi data lama:** data `invoices.json` yang sekarang (hasil migrasi sebelumnya dari Excel)
-perlu di-split ulang jadi 3 file (`purchase_orders.json`, `supplier_invoices.json`,
-`shipments.json`) — grouping by No PO dulu (jadi PO), lalu No Invoice di dalamnya (jadi
-Invoice), baru Shipment dari kombinasi logistik yang ada.
+**Catatan:** karena bangun dari nol (bukan rombak data lama), migrasi `invoices.json` lama
+(punya sendiri di `data/invoices.json`, masih dipakai halaman "Input Shipment/Import" lama
+di Transaksi) **belum dilakukan** — data lama & data PO/Invoice/Shipment baru saat ini
+jalan **berdampingan**, bukan menggantikan. Migrasi/penonaktifan halaman lama nyusul
+setelah Fase 2-3 (Milestone, Customs, Finance) selesai, supaya sekali pindah.
 
 ---
 
 ## Fase 2 — Shipment Monitoring: Milestone & Status Otomatis
 
-### 2.1 Milestone tanggal (ganti 4 field tanggal sekarang jadi pasangan planned/actual)
-- [ ] Pickup Vendor: Planned Pickup Date (opsional) + **Actual Pickup Date**.
-- [ ] Departure: **ETD** (sudah ada) + **ATD** (baru, aktual).
-- [ ] Arrival Indonesia: **ETA** (sudah ada) + **ATA** (baru, aktual — ini START KPI terpenting).
-- [ ] Customs Release Date (baru, milestone sendiri, beda dari ETA Gudang).
-- [ ] Warehouse Receipt Date (ganti nama dari "ETA Gudang" yang sekarang, jadi tanggal aktual, bukan estimasi).
+### 2.1 Milestone tanggal — SELESAI (kebangun barengan Fase 1.3)
+- [x] Pickup Vendor: Planned Pickup Date + **Actual Pickup Date**.
+- [x] Departure: **ETD** + **ATD**.
+- [x] Arrival Indonesia: **ETA** + **ATA**.
+- [x] Customs Release Date (milestone sendiri, beda dari Warehouse Receipt Date).
+- [x] Warehouse Receipt Date (tanggal aktual, terpisah dari rencana).
 
-### 2.2 Status Shipment & Status Barang otomatis
-- [ ] Ganti dropdown manual `Status Shipment`/`Status Barang` jadi fungsi turunan dari milestone terisi (rule di spec §16): WAITING PICKUP → WAITING DEPARTURE → IN TRANSIT → CUSTOMS PROCESS → DELIVERY TO WAREHOUSE → PENDING FORWARDER PAYMENT → DONE.
-- [ ] Update EWS engine (`src/lib/ews/engine.ts`) & semua tempat yang baca `statusBarang`/`statusShipment` manual, ganti ke hasil fungsi turunan ini.
+### 2.2 Status Shipment & Status Barang otomatis — SELESAI
+- [x] `computeShipmentStatus` di `src/lib/data/purchase.ts`: WAITING PICKUP → WAITING DEPARTURE → IN TRANSIT → CUSTOMS PROCESS → DELIVERY TO WAREHOUSE → DONE, dihitung dari milestone terisi. PENDING FORWARDER PAYMENT belum (nyusul pas Forwarder Finance di Fase 3.2).
+- [ ] EWS engine (`src/lib/ews/engine.ts`) masih baca `statusBarang`/`statusShipment` manual dari model lama (Invoice→Shipment JSON) — belum disambungkan ke PO/Invoice/Shipment Postgres yang baru. Nyusul pas migrasi/pensiunan halaman lama.
 
-### 2.3 Warehouse Receiving (entitas baru)
-- [ ] Data model `WarehouseReceiving` (Warehouse Destination, Actual Warehouse, Warehouse Receipt Date, Received By, Qty Received per item, Difference/Shortage, Condition/Notes, attachment Proof of Receipt).
-- [ ] Qty Received boleh beda dari Qty Shipped — simpan sebagai discrepancy tercatat, bukan overwrite qty shipment.
+### 2.3 Warehouse Receiving — SELESAI (versi ringkas, nempel di Shipment bukan entitas terpisah)
+- [x] Field ditambahkan ke `Shipment`: `actualWarehouseId`, `receivedBy`, `receivingNotes`, `receivingDocumentUrl` (+ upload Proof of Receipt). `qtyReceived` per item sudah ada dari awal di `ShipmentItem`.
+- [x] Qty Received boleh beda dari Qty Shipped — `shipmentDiscrepancies()` di `purchase.ts` menghitung selisihnya, tidak menimpa `qtyShipped`. Sudah dites (shipped 50, received 48 → tersimpan apa adanya).
 
-### 2.4 KPI Arrival-to-Warehouse Gap
-- [ ] Fungsi otomatis: `Arrival-to-Warehouse Lead Time = Warehouse Receipt Date - ATA Indonesia` (pola sama seperti `calcGapDays` yang sudah ada di `src/lib/gap.ts`, tinggal disesuaikan field-nya).
-- [ ] Tampilkan di: Dashboard, Shipment Detail, EWS, Report, Forwarder Performance.
+### 2.4 KPI Arrival-to-Warehouse Gap — SELESAI
+- [x] `arrivalToWarehouseGapDays()`, plus 2 KPI pendukung `customsLeadTimeDays()` & `postCustomsDeliveryDays()` di `purchase.ts`. Sudah dites: ATA 1 Sep → Warehouse Receipt 5 Sep = 4 hari.
+- [x] Tampil sebagai kolom "Gap ATA→Gudang" di halaman Daftar Shipment. Belum tampil di Dashboard/Report (itu Fase 4 & 5).
 
 ---
 
 ## Fase 3 — Finance (Customs & Forwarder)
 
-### 3.1 Customs/PIB (entitas baru, pisah dari Shipment header)
-- [ ] Field: No PIB, No NOPEN, PIB Date, NOTUL (Ya/Tidak + catatan), Nilai Billing, Billing Date, Status Pembayaran PIB, Payment Date, **Customs Release Date**.
-- [ ] KPI turunan: `Customs Lead Time = Customs Release Date - ATA`, `Post-Customs Delivery Lead Time = Warehouse Receipt Date - Customs Release Date`.
+### 3.1 Customs/PIB — SELESAI (nempel di Shipment, bukan tabel terpisah — sama alasan kayak Warehouse Receiving)
+- [x] Field: PIB, NOPEN, PIB Date, NOTUL (Ya/Tidak + catatan), Nilai Billing, Billing Date, Status Pembayaran PIB, Payment Date, scan dokumen. Customs Release Date sudah ada dari Fase 2.1.
+- [x] KPI turunan: `customsLeadTimeDays()`, `postCustomsDeliveryDays()` di `purchase.ts` (ATA→Customs Release, Customs Release→Gudang). Belum ditampilkan di UI manapun (nyusul kalau Laporan dibahas).
 
-### 3.2 Forwarder Finance (pisah dari field `nilaiForwarder`/`statusPembayaranFO` yang sekarang)
-- [ ] Field: Forwarder, Forwarder Invoice Number, Forwarder Invoice Date, Nilai Tagihan, Status Dokumen (BELUM ADA INVOICE → INVOICE DITERIMA → DOKUMEN KE FINANCE → WAITING PAYMENT → PAID), Tanggal Dokumen ke Finance, Status Pembayaran, Tanggal Pembayaran, attachment.
-- [ ] Rombak `PaymentStatusTable`/`payment-logs` API yang sekarang jadi 2 alur terpisah: Pembayaran Customs/PIB dan Pembayaran Forwarder (masing-masing tetap dengan audit log seperti sekarang).
+### 3.2 Forwarder Finance — SELESAI (nempel di Shipment)
+- [x] Field: No Invoice Forwarder, Tanggal Invoice, Nilai Tagihan, Status Dokumen (BELUM ADA INVOICE → INVOICE DITERIMA → DOKUMEN KE FINANCE → WAITING PAYMENT → PAID), Tanggal Dokumen ke Finance, Status & Tanggal Pembayaran, scan dokumen.
+- [x] `computeShipmentStatus` diperbarui: status `DONE` sekarang butuh Forwarder Payment Status = SUDAH DIBAYAR juga (ada status baru "PENDING FORWARDER PAYMENT" di antara Delivery to Warehouse dan Done, sesuai rule spec §16).
+- [ ] `PaymentStatusTable`/`payment-logs` (punya "Update Status Pembayaran" yang lama, buat model Invoice→Shipment JSON) **belum dirombak/disatuin** — Customs & Forwarder payment yang baru cuma bisa diupdate lewat form Edit Shipment ini, belum ada audit log/histori perubahan seperti yang lama. Nyusul di Fase 6 (Hardening) bareng Audit Trail generik.
+
+**Sudah dites end-to-end:** PIB, NOPEN, NOTUL, Nilai Billing Customs, Status Bayar PIB, No Invoice Forwarder, Status Dokumen & Bayar Forwarder — semua tersimpan benar & tampil di kolom "Bayar PIB"/"Bayar Forwarder" di Daftar Shipment.
 
 ---
 

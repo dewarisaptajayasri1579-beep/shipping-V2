@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { LayoutGrid, Tags, FileInput, BarChart3, Bell, Wallet } from "lucide-react"
+import { LayoutGrid, Tags, FileInput, BarChart3, Bell, Wallet, ShoppingCart, Ship } from "lucide-react"
 
 export interface NavItem {
   label: string
@@ -30,6 +30,29 @@ export const NAV_GROUPS: NavGroup[] = [
         children: [
           { label: "Ringkasan Status Barang", href: "/dashboard" },
         ],
+      },
+    ],
+  },
+  {
+    group: "Purchase",
+    items: [
+      {
+        label: "Purchase",
+        icon: ShoppingCart,
+        children: [
+          { label: "Purchase Order", href: "/purchase/orders" },
+          { label: "Supplier Invoice", href: "/purchase/invoices" },
+        ],
+      },
+    ],
+  },
+  {
+    group: "Shipment",
+    items: [
+      {
+        label: "Shipment",
+        icon: Ship,
+        children: [{ label: "Daftar Shipment", href: "/purchase/shipments" }],
       },
     ],
   },

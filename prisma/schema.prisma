@@ -33,3 +33,166 @@ model Session {
 
   @@map("sessions")
 }
+
+// ---------------------------------------------------------------------------
+// Purchase Order — akar transaksi (docs/tahapan-input-shipment.md Fase 1.1).
+//
+// Referensi ke master data (Supplier/Brand/Country/Item) sengaja disimpan sebagai
+// ID string biasa (bukan relation Prisma) karena master data itu masih di file JSON
+// (src/lib/data/master.ts), belum ikut pindah ke Postgres — supaya scope migrasi
+// tahap ini tetap cuma 3 entitas transaksi baru (PO/Invoice/Shipment).
+//
+// Status PO/Invoice/Shipment SENGAJA tidak disimpan sebagai kolom (spec §16: "jangan
+// minta user pilih Status Shipment manual kalau bisa diturunkan") — dihitung di kode
+// (src/lib/data/purchase.ts) dari qty & tanggal tiap kali dibaca, supaya tidak pernah
+// nyimpang dari data aslinya.
+// ---------------------------------------------------------------------------
+
+model PurchaseOrder {
+  id         String              @id @default(uuid())
+  poNumber   String              @map("po_number")
+  poDate     DateTime?           @map("po_date") @db.Date
+  supplierId String?             @map("supplier_id")
+  brandId    String?             @map("brand_id")
+  countryId  String?             @map("country_id")
+  currency   String              @default("USD")
+  notes      String?
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+  items      PurchaseOrderItem[]
+  invoices   SupplierInvoice[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String        @map("purchase_order_id")
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  itemId          String?       @map("item_id")
+  qtyOrder        Float         @map("qty_order")
+  unitPrice       Float         @default(0) @map("unit_price")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  invoiceItems    InvoiceItem[]
+
+  @@map("purchase_order_items")
+}
+
+// ---------------------------------------------------------------------------
+// Supplier Invoice — dibuat dari PO, item-nya wajib merujuk PO Item (spec §8.2:
+// "user tidak perlu input ulang Item Code/Description dari nol").
+// ---------------------------------------------------------------------------
+
+model SupplierInvoice {
+  id              String        @id @default(uuid())
+  invoiceNumber   String        @map("invoice_number")
+  invoiceDate     DateTime?     @map("invoice_date") @db.Date
+  purchaseOrderId String        @map("purchase_order_id")
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  countryId       String?       @map("country_id")
+  currency        String        @default("USD")
+  notes           String?
+  documentUrl     String?       @map("document_url")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  items           InvoiceItem[]
+
+  @@map("supplier_invoices")
+}
+
+model InvoiceItem {
+  id                  String            @id @default(uuid())
+  supplierInvoiceId   String            @map("supplier_invoice_id")
+  supplierInvoice     SupplierInvoice   @relation(fields: [supplierInvoiceId], references: [id], onDelete: Cascade)
+  purchaseOrderItemId String            @map("purchase_order_item_id")
+  purchaseOrderItem   PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id])
+  qty                 Float
+  unitPrice           Float             @default(0) @map("unit_price")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+  shipmentItems       ShipmentItem[]
+
+  @@map("invoice_items")
+}
+
+// ---------------------------------------------------------------------------
+// Shipment — dibuat dari Invoice Item (bisa gabung dari beberapa Invoice sekaligus,
+// spec §9.5), Item-nya wajib merujuk Invoice Item (bukan input ulang).
+// ---------------------------------------------------------------------------
+
+model Shipment {
+  id                    String         @id @default(uuid())
+  shipmentNo            String         @unique @map("shipment_no")
+  shipmentDate          DateTime?      @map("shipment_date") @db.Date
+  originCountryId       String?        @map("origin_country_id")
+  mode                  String         @default("AIR") // "AIR" | "SEA"
+  forwarderId           String?        @map("forwarder_id")
+  destinationWarehouseId String?       @map("destination_warehouse_id")
+  originPort            String?        @map("origin_port")
+  destinationPort       String?        @map("destination_port")
+  notes                 String?
+  isDraft               Boolean        @default(false) @map("is_draft")
+
+  // Milestone — planned (estimasi) vs actual (aktual), spec §11 & §29.
+  plannedPickupDate     DateTime?      @map("planned_pickup_date") @db.Date
+  actualPickupDate      DateTime?      @map("actual_pickup_date") @db.Date
+  etd                   DateTime?      @db.Date
+  atd                   DateTime?      @db.Date
+  eta                   DateTime?      @db.Date
+  ata                   DateTime?      @db.Date
+  customsReleaseDate    DateTime?      @map("customs_release_date") @db.Date
+  warehouseReceiptDate  DateTime?      @map("warehouse_receipt_date") @db.Date
+
+  // Warehouse Receiving (spec Fase 2.3) — actualWarehouseId dipisah dari destinationWarehouseId
+  // karena barang kadang mendarat di gudang beda dari yang direncanakan. Qty Received per item
+  // ada di ShipmentItem.qtyReceived (discrepancy = qtyShipped - qtyReceived per baris).
+  actualWarehouseId     String?        @map("actual_warehouse_id")
+  receivedBy            String?        @map("received_by")
+  receivingNotes        String?        @map("receiving_notes")
+  receivingDocumentUrl  String?        @map("receiving_document_url")
+
+  // Customs/PIB (spec Fase 3.1) — nempel di Shipment (bukan tabel terpisah) karena 1
+  // Shipment = 1 kali proses customs, sama pola kayak Warehouse Receiving di atas.
+  pib                   String?
+  nopen                 String?
+  pibDate               DateTime?      @map("pib_date") @db.Date
+  notul                 Boolean        @default(false)
+  notulNotes            String?        @map("notul_notes")
+  customsBillingValue   Float?         @map("customs_billing_value")
+  customsBillingDate    DateTime?      @map("customs_billing_date") @db.Date
+  customsPaymentStatus  String         @default("BELUM DIBAYAR") @map("customs_payment_status")
+  customsPaymentDate    DateTime?      @map("customs_payment_date") @db.Date
+  customsDocumentUrl    String?        @map("customs_document_url")
+
+  // Forwarder Finance (spec Fase 3.2) — dipisah dari `forwarderId` (yang cuma nunjuk
+  // master data forwarder-nya) karena ini soal tagihan & pembayaran ke forwarder itu.
+  forwarderInvoiceNumber String?       @map("forwarder_invoice_number")
+  forwarderInvoiceDate   DateTime?     @map("forwarder_invoice_date") @db.Date
+  forwarderBillingValue  Float?        @map("forwarder_billing_value")
+  forwarderDocStatus     String        @default("BELUM ADA INVOICE") @map("forwarder_doc_status")
+  forwarderDocDate       DateTime?     @map("forwarder_doc_date") @db.Date
+  forwarderPaymentStatus String        @default("BELUM DIBAYAR") @map("forwarder_payment_status")
+  forwarderPaymentDate   DateTime?     @map("forwarder_payment_date") @db.Date
+  forwarderDocumentUrl   String?       @map("forwarder_document_url")
+
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+  items                 ShipmentItem[]
+
+  @@map("shipments")
+}
+
+model ShipmentItem {
+  id            String      @id @default(uuid())
+  shipmentId    String      @map("shipment_id")
+  shipment      Shipment    @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  invoiceItemId String      @map("invoice_item_id")
+  invoiceItem   InvoiceItem @relation(fields: [invoiceItemId], references: [id])
+  qtyShipped    Float       @map("qty_shipped")
+  qtyReceived   Float?      @map("qty_received")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@map("shipment_items")
+}
