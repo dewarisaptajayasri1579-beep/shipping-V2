@@ -77,9 +77,7 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Transaksi",
         icon: FileInput,
         children: [
-          { label: "Input Shipment/Import", href: "/transaksi/shipment" },
           { label: "Input Shipment DTD/Launching", href: "/transaksi/shipment-dtd" },
-          { label: "Update Status Pembayaran", href: "/transaksi/status-pembayaran" },
           { label: "Perbandingan Rate Forwarder", href: "/transaksi/perbandingan-rate" },
         ],
       },

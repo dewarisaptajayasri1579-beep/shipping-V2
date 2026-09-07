@@ -38,6 +38,9 @@ export default async function SupplierInvoicePage() {
     currency: inv.currency,
     notes: inv.notes,
     documentUrl: inv.documentUrl,
+    paymentStatus: inv.paymentStatus as "BELUM DIBAYAR" | "SUDAH DIBAYAR",
+    dueDate: inv.dueDate ? inv.dueDate.toISOString().slice(0, 10) : null,
+    paymentDate: inv.paymentDate ? inv.paymentDate.toISOString().slice(0, 10) : null,
     items: inv.items.map((it) => ({ id: it.id, purchaseOrderItemId: it.purchaseOrderItemId, qty: it.qty, unitPrice: it.unitPrice })),
     status: computeInvoiceStatus(inv, shippedQtyByInvoiceItem(inv, shipments)),
   }))

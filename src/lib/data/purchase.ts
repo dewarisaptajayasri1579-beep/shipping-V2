@@ -133,6 +133,9 @@ export interface SupplierInvoiceInput {
   currency: string
   notes: string | null
   documentUrl: string | null
+  paymentStatus: "BELUM DIBAYAR" | "SUDAH DIBAYAR"
+  dueDate: string | null
+  paymentDate: string | null
   items: InvoiceItemInput[]
 }
 
@@ -160,6 +163,20 @@ export async function validateInvoiceQty(input: SupplierInvoiceInput, excludeInv
   return null
 }
 
+function invoiceHeaderData(input: SupplierInvoiceInput) {
+  return {
+    invoiceNumber: input.invoiceNumber,
+    invoiceDate: toDate(input.invoiceDate),
+    countryId: input.countryId,
+    currency: input.currency,
+    notes: input.notes,
+    documentUrl: input.documentUrl,
+    paymentStatus: input.paymentStatus,
+    dueDate: toDate(input.dueDate),
+    paymentDate: toDate(input.paymentDate),
+  }
+}
+
 export const supplierInvoiceData = {
   getAll: () => prisma.supplierInvoice.findMany({ ...invoiceWithItems, orderBy: { createdAt: "desc" } }),
   getById: (id: string) => prisma.supplierInvoice.findUnique({ where: { id }, ...invoiceWithItems }),
@@ -167,13 +184,8 @@ export const supplierInvoiceData = {
   create: (input: SupplierInvoiceInput) =>
     prisma.supplierInvoice.create({
       data: {
-        invoiceNumber: input.invoiceNumber,
-        invoiceDate: toDate(input.invoiceDate),
+        ...invoiceHeaderData(input),
         purchaseOrderId: input.purchaseOrderId,
-        countryId: input.countryId,
-        currency: input.currency,
-        notes: input.notes,
-        documentUrl: input.documentUrl,
         items: { create: input.items.map((it) => ({ purchaseOrderItemId: it.purchaseOrderItemId, qty: it.qty, unitPrice: it.unitPrice })) },
       },
       ...invoiceWithItems,
@@ -182,14 +194,7 @@ export const supplierInvoiceData = {
     prisma.$transaction(async (tx) => {
       await tx.supplierInvoice.update({
         where: { id },
-        data: {
-          invoiceNumber: input.invoiceNumber,
-          invoiceDate: toDate(input.invoiceDate),
-          countryId: input.countryId,
-          currency: input.currency,
-          notes: input.notes,
-          documentUrl: input.documentUrl,
-        },
+        data: invoiceHeaderData(input),
       })
       await tx.invoiceItem.deleteMany({ where: { supplierInvoiceId: id } })
       if (input.items.length > 0) {

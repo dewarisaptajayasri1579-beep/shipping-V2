@@ -56,6 +56,9 @@ export function sanitizeSupplierInvoice(body: unknown): SupplierInvoiceInput | {
     currency: requiredString(input?.currency) || "USD",
     notes: optionalString(input?.notes),
     documentUrl: optionalString(input?.documentUrl),
+    paymentStatus: enumValue(STATUS_PEMBAYARAN, input?.paymentStatus, "BELUM DIBAYAR"),
+    dueDate: optionalString(input?.dueDate),
+    paymentDate: optionalString(input?.paymentDate),
     items: Array.isArray(input?.items) ? input.items.map(sanitizeInvoiceItem) : [],
   }
 }

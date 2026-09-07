@@ -29,6 +29,8 @@ export interface InvoiceItemRow {
   unitPrice: number;
 }
 
+export type StatusPembayaran = "BELUM DIBAYAR" | "SUDAH DIBAYAR";
+
 export interface SupplierInvoiceRow {
   id: string;
   invoiceNumber: string;
@@ -38,6 +40,9 @@ export interface SupplierInvoiceRow {
   currency: string;
   notes: string | null;
   documentUrl: string | null;
+  paymentStatus: StatusPembayaran;
+  dueDate: string | null;
+  paymentDate: string | null;
   items: InvoiceItemRow[];
   status: "DRAFT" | "READY TO SHIP" | "PARTIALLY SHIPPED" | "FULLY SHIPPED";
 }
@@ -58,6 +63,9 @@ interface FormState {
   currency: string;
   notes: string;
   documentUrl: string | null;
+  paymentStatus: StatusPembayaran;
+  dueDate: string;
+  paymentDate: string;
   lines: ItemLineForm[];
 }
 
@@ -69,6 +77,9 @@ const emptyForm = (): FormState => ({
   currency: "USD",
   notes: "",
   documentUrl: null,
+  paymentStatus: "BELUM DIBAYAR",
+  dueDate: "",
+  paymentDate: "",
   lines: [],
 });
 
@@ -77,6 +88,11 @@ const STATUS_BADGE: Record<SupplierInvoiceRow["status"], "warning" | "info" | "s
   "READY TO SHIP": "info",
   "PARTIALLY SHIPPED": "info",
   "FULLY SHIPPED": "success",
+};
+
+const STATUS_BAYAR_BADGE: Record<StatusPembayaran, "warning" | "success"> = {
+  "BELUM DIBAYAR": "warning",
+  "SUDAH DIBAYAR": "success",
 };
 
 function formatRupiah(amount: number) {
@@ -125,6 +141,9 @@ export const SupplierInvoiceTable: React.FC<{
       currency: r.currency,
       notes: r.notes ?? "",
       documentUrl: r.documentUrl,
+      paymentStatus: r.paymentStatus,
+      dueDate: r.dueDate ?? "",
+      paymentDate: r.paymentDate ?? "",
       lines: r.items.map((it) => ({ purchaseOrderItemId: it.purchaseOrderItemId, qty: it.qty, unitPrice: it.unitPrice })),
     });
     setFormModal({ mode: "edit", record: r });
@@ -215,6 +234,13 @@ export const SupplierInvoiceTable: React.FC<{
       cell: (r) => <Badge variant={STATUS_BADGE[r.status]}>{r.status}</Badge>,
       filterOptions: ["DRAFT", "READY TO SHIP", "PARTIALLY SHIPPED", "FULLY SHIPPED"].map((s) => ({ value: s, label: s })),
       filterValue: (r) => r.status,
+    },
+    {
+      key: "paymentStatus",
+      header: "Bayar Supplier (PI)",
+      cell: (r) => <Badge variant={STATUS_BAYAR_BADGE[r.paymentStatus]}>{r.paymentStatus}</Badge>,
+      filterOptions: ["BELUM DIBAYAR", "SUDAH DIBAYAR"].map((s) => ({ value: s, label: s })),
+      filterValue: (r) => r.paymentStatus,
     },
     {
       key: "actions",
@@ -358,6 +384,26 @@ export const SupplierInvoiceTable: React.FC<{
                     })}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {formModal?.mode === "edit" && (
+            <div className="pt-3 border-t border-slate-200/80 dark:border-line">
+              <h3 className="text-sm font-bold text-slate-700 dark:text-fg-secondary mb-2">Pembayaran ke Supplier (PI)</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Select
+                  label="Status Pembayaran"
+                  options={[
+                    { value: "BELUM DIBAYAR", label: "BELUM DIBAYAR" },
+                    { value: "SUDAH DIBAYAR", label: "SUDAH DIBAYAR" },
+                  ]}
+                  value={form.paymentStatus}
+                  onChange={(v) => setForm((f) => ({ ...f, paymentStatus: v as StatusPembayaran }))}
+                  searchable={false}
+                />
+                <DatePicker label="Jatuh Tempo" value={form.dueDate} onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))} />
+                <DatePicker label="Tanggal Dibayar" value={form.paymentDate} onChange={(e) => setForm((f) => ({ ...f, paymentDate: e.target.value }))} />
               </div>
             </div>
           )}

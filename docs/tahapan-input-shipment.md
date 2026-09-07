@@ -196,11 +196,13 @@ setelah Fase 2-3 (Milestone, Customs, Finance) selesai, supaya sekali pindah.
 
 ## Fase 6 — Hardening
 
-- [ ] **Audit Trail generik** — siapa/kapan/field apa/nilai lama→baru/alasan, untuk semua entitas (bukan cuma payment log seperti sekarang). Kemungkinan butuh 1 store baru `audit_logs.json` + helper `logChange()` dipanggil dari tiap API PATCH.
-- [ ] **Attachment per tahap** — sudah ada infra upload lokal (`/api/upload`, `DocumentUploadField`) dari kerjaan sebelumnya, tinggal dipasang di tiap entitas baru (PO doc, Commercial Invoice, Packing List, AWB/BL, PIB, NOPEN, Billing, NOTUL, Proof of Receipt, Forwarder Invoice, Payment Proof).
-- [ ] **Excel Migration** — script migrasi resmi ikut aturan spec §34 (group by No PO dulu, bukan by shipment name kayak migrasi sementara sebelumnya).
+- [x] **Migrasi data lama** — `scripts/migrate-legacy-invoices.ts` (1x-jalan, `npx tsx scripts/migrate-legacy-invoices.ts`): 6 invoice/shipment dari `data/invoices.json` (model lama) berhasil dipindah jadi PO+Invoice+Shipment baru di Postgres (1 old-Shipment/PO -> 1 PurchaseOrder baru, karena data lama gak punya PO terpisah). 2 data uji coba (invoice "122" & "INV 001", tanpa PO/item) dilewati. Sudah diverifikasi cocok (PO number, nilai forwarder, status bayar) lewat query langsung ke DB.
+- [x] **Pensiun menu lama** — "Input Shipment/Import" & "Update Status Pembayaran" dihapus dari sidebar, halamannya (`src/app/transaksi/shipment`, `src/app/transaksi/status-pembayaran`), komponennya (`InvoiceTable`, `ShipmentDetailView`, `PaymentStatusTable` di `components/transaksi/`), dan API route lamanya (`/api/transaksi/invoices`, `/api/transaksi/payment-logs`) sudah dihapus — sudah dites 404. **Data layer-nya** (`src/lib/data/transaksi.ts`, `invoiceStore`, `data/invoices.json`, `data/payment_logs.json`) **sengaja dipertahankan** karena EWS engine (`src/lib/ews/engine.ts`) masih bergantung ke situ — baru boleh dibersihkan total setelah EWS dibahas & di-rewire ke model baru (Fase 4).
+- [x] **Gap ketemu & ditambal**: Supplier Invoice awalnya belum punya field Status Pembayaran ke Supplier (PI) — ketauan pas nyiapin migrasi data lama (data lama punya `statusPembayaranPI`/`dueDatePI`, model baru enggak). Sudah ditambahkan (`paymentStatus`, `dueDate`, `paymentDate` di `SupplierInvoice`) sebelum migrasi jalan, jadi datanya gak hilang.
+- [ ] **Audit Trail generik** — siapa/kapan/field apa/nilai lama→baru/alasan, untuk semua entitas (bukan cuma payment log seperti sekarang). Kemungkinan butuh 1 tabel baru `audit_logs` + helper `logChange()` dipanggil dari tiap API PATCH.
+- [ ] **Attachment per tahap** — infra upload lokal (`/api/upload`, `DocumentUploadField`) sudah dipasang di semua entitas baru (PO belum punya attachment sendiri, tapi Invoice/Shipment/Customs/Forwarder semua sudah).
 - [ ] Permission/Role — cek kebutuhan lebih detail dari role owner/admin/user yang sudah ada sekarang.
-- [ ] Export Report — pastikan semua laporan baru di Fase 5 juga bisa di-export (reuse `exportToCsv`).
+- [ ] Export Report — nyusul kalau Laporan (Fase 5) dibahas.
 
 ---
 

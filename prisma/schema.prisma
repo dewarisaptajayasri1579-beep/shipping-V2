@@ -94,6 +94,14 @@ model SupplierInvoice {
   currency        String        @default("USD")
   notes           String?
   documentUrl     String?       @map("document_url")
+
+  // Pembayaran ke Supplier (PI) — kelewat pas desain awal (spec §8.3 gak nyebut ini
+  // eksplisit), tapi data lama (Excel) selalu punya field ini, jadi ditambahkan biar
+  // gak hilang. Beda dari Customs/Forwarder payment yang nempel di Shipment.
+  paymentStatus   String        @default("BELUM DIBAYAR") @map("payment_status")
+  dueDate         DateTime?     @map("due_date") @db.Date
+  paymentDate     DateTime?     @map("payment_date") @db.Date
+
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
   items           InvoiceItem[]
