@@ -1,5 +1,5 @@
 import { requiredString, optionalString, numberOrZero, enumValue } from "./api-helpers"
-import type { PurchaseOrderInput, SupplierInvoiceInput, ShipmentInput } from "./purchase"
+import type { PurchaseOrderInput, SupplierInvoiceInput, ShipmentInput, QuickEntryRowInput } from "./purchase"
 
 const STATUS_PEMBAYARAN = ["BELUM DIBAYAR", "SUDAH DIBAYAR"] as const
 const FORWARDER_DOC_STATUS = ["BELUM ADA INVOICE", "INVOICE DITERIMA", "DOKUMEN KE FINANCE", "WAITING PAYMENT", "PAID"] as const
@@ -120,4 +120,48 @@ export function sanitizeShipment(body: unknown): ShipmentInput | { error: string
     forwarderDocumentUrl: optionalString(input?.forwarderDocumentUrl),
     items: Array.isArray(input?.items) ? input.items.map(sanitizeShipmentItem) : [],
   }
+}
+
+function sanitizeQuickEntryRow(body: unknown): QuickEntryRowInput | { error: string } {
+  const input = body as Record<string, unknown>
+  const poNumber = requiredString(input?.poNumber)
+  if (!poNumber) return { error: "No PO wajib diisi" }
+  const invoiceNumber = requiredString(input?.invoiceNumber)
+  if (!invoiceNumber) return { error: "No Invoice wajib diisi" }
+  const itemId = optionalString(input?.itemId)
+  if (!itemId) return { error: "Item wajib dipilih" }
+  const qty = numberOrZero(input?.qty)
+  if (qty <= 0) return { error: "Qty wajib lebih dari 0" }
+
+  return {
+    poNumber,
+    poDate: optionalString(input?.poDate),
+    supplierId: optionalString(input?.supplierId),
+    brandId: optionalString(input?.brandId),
+    countryId: optionalString(input?.countryId),
+    currency: requiredString(input?.currency) || "USD",
+    invoiceNumber,
+    invoiceDate: optionalString(input?.invoiceDate),
+    itemId,
+    qty,
+    unitPrice: numberOrZero(input?.unitPrice),
+    mode: enumValue(["AIR", "SEA"] as const, input?.mode, "AIR"),
+    forwarderId: optionalString(input?.forwarderId),
+    destinationWarehouseId: optionalString(input?.destinationWarehouseId),
+    shipmentDate: optionalString(input?.shipmentDate),
+    notes: optionalString(input?.notes),
+  }
+}
+
+export function sanitizeQuickEntryRows(body: unknown): QuickEntryRowInput[] | { error: string } {
+  const input = body as Record<string, unknown>
+  if (!Array.isArray(input?.rows) || input.rows.length === 0) return { error: "Tidak ada baris untuk disimpan" }
+
+  const rows: QuickEntryRowInput[] = []
+  for (let i = 0; i < input.rows.length; i++) {
+    const result = sanitizeQuickEntryRow(input.rows[i])
+    if ("error" in result) return { error: `Baris ${i + 1}: ${result.error}` }
+    rows.push(result)
+  }
+  return rows
 }

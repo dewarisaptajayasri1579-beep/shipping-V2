@@ -128,6 +128,32 @@ ada sekarang.
 ### 1.4 Outstanding Engine — SELESAI (versi dasar)
 - [x] `invoicedQtyByPoItem`, `shippedQtyByInvoiceItem` di `src/lib/data/purchase.ts` — dipakai buat validasi qty & hitung status otomatis. Belum ada tampilan "Outstanding Qty" eksplisit di kolom tabel PO/Invoice (baru dipakai internal buat validasi & status) — nyusul di Laporan Outstanding (Fase 5) kalau dibutuhkan tampilan drill-down.
 
+### 1.5 Input Cepat (unified entry) — SELESAI
+Setelah PO/Invoice/Shipment jadi 3 menu terpisah (masing-masing halaman penuh), user
+lapangan aslinya minta **satu tempat inputan** mirip sheet "DATABASE" Excel lama —
+bukan pindah-pindah 3 menu. Keputusan: backend relasional (PO→Invoice→Shipment + status
+turunan) dipertahankan, tapi ditambah **satu halaman flat** yang di belakang otomatis
+bikin ketiganya sekaligus. 3 menu terpisah tetap ada untuk kasus lanjutan (invoice/shipment
+parsial, gabung banyak invoice ke 1 shipment, dst).
+- [x] Halaman `/quick-entry` (`QuickEntryForm.tsx`) — input baris demi baris: No PO & No
+  Invoice **"nempel"** dari baris sebelumnya (tidak di-reset setelah Tambah Baris) karena
+  di lapangan entri biasanya berurutan dalam PO/Invoice yang sama; cuma Item/Qty/Harga yang
+  di-reset tiap baris. Field detail (tanggal, supplier, brand, negara, forwarder, kirim
+  AIR/SEA, gudang tujuan) collapsible, ikut nempel juga.
+- [x] `createQuickEntryBatch` (`src/lib/data/purchase.ts`) + `POST /api/purchase/quick-entry`
+  — grouping otomatis: baris dengan No PO sama → 1 PurchaseOrder (banyak item); dalam grup
+  itu, baris dengan No Invoice sama → 1 SupplierInvoice + 1 Shipment (banyak item). Qty &
+  Unit Price per baris dipakai identik di ketiga level (qtyOrder = qty invoice = qty
+  shipped) — cocok buat kasus umum (bukan invoicing/shipping parsial).
+- [x] Keputusan disengaja (v1): **selalu bikin PO/Invoice/Shipment baru**, meski No
+  PO/No Invoice yang diketik kebetulan sama dengan transaksi yang sudah tersimpan
+  sebelumnya (beda sesi/hari) — tidak ada logic "sambung ke record lama". Kalau mau
+  nambah item ke transaksi lama, edit lewat menu Purchase Order/Supplier Invoice/Shipment
+  biasa. Alasan: hindari kompleksitas deteksi "invoice ini sama dengan yang mana" di v1;
+  bisa direvisit kalau ternyata sering dibutuhkan.
+- [x] Nav: grup baru "Input Cepat" di posisi paling atas (setelah Dashboard) — jadi entry
+  point utama harian, di atas grup "Purchase" & "Shipment" yang isinya menu-menu lanjutan.
+
 **Catatan:** karena bangun dari nol (bukan rombak data lama), migrasi `invoices.json` lama
 (punya sendiri di `data/invoices.json`, masih dipakai halaman "Input Shipment/Import" lama
 di Transaksi) **belum dilakukan** — data lama & data PO/Invoice/Shipment baru saat ini

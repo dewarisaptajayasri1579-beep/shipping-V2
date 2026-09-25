@@ -300,9 +300,9 @@ export async function validateShipmentQty(input: ShipmentInput, excludeShipmentI
   return null
 }
 
-async function nextShipmentNo(): Promise<string> {
+async function nextShipmentNo(client: Prisma.TransactionClient | typeof prisma = prisma): Promise<string> {
   const year = new Date().getFullYear()
-  const count = await prisma.shipment.count({ where: { shipmentNo: { startsWith: `SHP-${year}-` } } })
+  const count = await client.shipment.count({ where: { shipmentNo: { startsWith: `SHP-${year}-` } } })
   return `SHP-${year}-${String(count + 1).padStart(5, "0")}`
 }
 
@@ -385,6 +385,111 @@ export function shipmentTotals(shipment: ShipmentWithItems) {
   const shippedQty = shipment.items.reduce((sum, it) => sum + it.qtyShipped, 0)
   const shippedValue = shipment.items.reduce((sum, it) => sum + it.qtyShipped * it.invoiceItem.unitPrice, 0)
   return { shippedQty, shippedValue }
+}
+
+// --- Quick Entry (Input Cepat) ------------------------------------------------
+//
+// Satu tempat input flat mirip sheet "DATABASE" Excel lama — user isi baris demi baris,
+// No PO/No Invoice biasanya "nempel" dari baris sebelumnya (dihandle di form, lihat
+// QuickEntryForm.tsx), lalu di sini digrupkan otomatis jadi PO -> Invoice -> Shipment.
+// Qty & Unit Price di 1 baris dipakai identik di ketiga level (qtyOrder = qty invoice =
+// qty shipped) karena tujuannya input cepat kasus umum, bukan invoicing/shipping
+// parsial — itu tetap lewat menu Purchase Order/Supplier Invoice/Shipment biasa.
+//
+// Selalu bikin PO+Invoice+Shipment baru (tidak nyambung ke record lama meski No PO/No
+// Invoice-nya kebetulan sama) — kalau mau nambah item ke transaksi lama, edit lewat menu
+// yang bersangkutan.
+
+export interface QuickEntryRowInput {
+  poNumber: string
+  poDate: string | null
+  supplierId: string | null
+  brandId: string | null
+  countryId: string | null
+  currency: string
+  invoiceNumber: string
+  invoiceDate: string | null
+  itemId: string | null
+  qty: number
+  unitPrice: number
+  mode: "AIR" | "SEA"
+  forwarderId: string | null
+  destinationWarehouseId: string | null
+  shipmentDate: string | null
+  notes: string | null
+}
+
+export async function createQuickEntryBatch(rows: QuickEntryRowInput[]) {
+  return prisma.$transaction(async (tx) => {
+    const poCache = new Map<string, string>() // poNumber -> PurchaseOrder.id
+    const invoiceCache = new Map<string, string>() // `${poNumber}::${invoiceNumber}` -> SupplierInvoice.id
+    const shipmentCache = new Map<string, string>() // same key -> Shipment.id
+
+    for (const row of rows) {
+      let poId = poCache.get(row.poNumber)
+      if (!poId) {
+        const po = await tx.purchaseOrder.create({
+          data: {
+            poNumber: row.poNumber,
+            poDate: toDate(row.poDate),
+            supplierId: row.supplierId,
+            brandId: row.brandId,
+            countryId: row.countryId,
+            currency: row.currency,
+          },
+        })
+        poId = po.id
+        poCache.set(row.poNumber, poId)
+      }
+
+      const poItem = await tx.purchaseOrderItem.create({
+        data: { purchaseOrderId: poId, itemId: row.itemId, qtyOrder: row.qty, unitPrice: row.unitPrice },
+      })
+
+      const groupKey = `${row.poNumber}::${row.invoiceNumber}`
+      let invoiceId = invoiceCache.get(groupKey)
+      if (!invoiceId) {
+        const invoice = await tx.supplierInvoice.create({
+          data: {
+            invoiceNumber: row.invoiceNumber,
+            invoiceDate: toDate(row.invoiceDate),
+            purchaseOrderId: poId,
+            countryId: row.countryId,
+            currency: row.currency,
+          },
+        })
+        invoiceId = invoice.id
+        invoiceCache.set(groupKey, invoiceId)
+      }
+
+      const invoiceItem = await tx.invoiceItem.create({
+        data: { supplierInvoiceId: invoiceId, purchaseOrderItemId: poItem.id, qty: row.qty, unitPrice: row.unitPrice },
+      })
+
+      let shipmentId = shipmentCache.get(groupKey)
+      if (!shipmentId) {
+        const shipment = await tx.shipment.create({
+          data: {
+            shipmentNo: await nextShipmentNo(tx),
+            shipmentDate: toDate(row.shipmentDate),
+            originCountryId: row.countryId,
+            mode: row.mode,
+            forwarderId: row.forwarderId,
+            destinationWarehouseId: row.destinationWarehouseId,
+            notes: row.notes,
+          },
+        })
+        shipmentId = shipment.id
+        shipmentCache.set(groupKey, shipmentId)
+      }
+
+      await tx.shipmentItem.create({
+        data: { shipmentId, invoiceItemId: invoiceItem.id, qtyShipped: row.qty, qtyReceived: null },
+      })
+    }
+
+    return { purchaseOrders: poCache.size, invoices: invoiceCache.size, shipments: shipmentCache.size, items: rows.length }
+  })
 }
 
 const DAY_MS = 1000 * 60 * 60 * 24

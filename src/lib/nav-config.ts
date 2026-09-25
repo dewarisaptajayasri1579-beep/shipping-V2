@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { LayoutGrid, Tags, FileInput, BarChart3, Bell, Wallet, ShoppingCart, Ship } from "lucide-react"
+import { LayoutGrid, Tags, FileInput, BarChart3, Bell, Wallet, ShoppingCart, Ship, Zap } from "lucide-react"
 
 export interface NavItem {
   label: string
@@ -30,6 +30,16 @@ export const NAV_GROUPS: NavGroup[] = [
         children: [
           { label: "Ringkasan Status Barang", href: "/dashboard" },
         ],
+      },
+    ],
+  },
+  {
+    group: "Input Cepat",
+    items: [
+      {
+        label: "Input Cepat",
+        icon: Zap,
+        href: "/quick-entry",
       },
     ],
   },
